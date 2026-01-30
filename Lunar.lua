@@ -5,13 +5,14 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 local CoreGui = game:GetService("CoreGui")
 local TeleportService = game:GetService("TeleportService")
+local Lighting = game:GetService("Lighting") -- เพิ่ม Lighting Service
 
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FoxyHub_v7_Fixed"
+ScreenGui.Name = "FoxyHub_v12_Fullbright"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
@@ -26,12 +27,13 @@ local targetSpeed = 16
 local espEnabled = false
 local waypoints = {}
 local toggleKey = Enum.KeyCode.RightControl
+local currentBrightness = Lighting.Brightness -- จำค่าความสว่างเดิม
 
 -- 1. Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 350) 
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
+MainFrame.Size = UDim2.new(0, 500, 0, 380) -- เพิ่มความสูงนิดหน่อยรับฟังก์ชันใหม่
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -190)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -318,7 +320,7 @@ FlyBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- 4. WalkSpeed (FIXED LOGIC)
+-- 4. WalkSpeed
 local r4 = createRow(30, 4)
 local SpdBtn = Instance.new("TextButton", r4)
 SpdBtn.Size = UDim2.new(0.6, 0, 1, 0)
@@ -337,7 +339,6 @@ SpdBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 SpdBox.TextColor3 = Color3.fromRGB(255, 255, 255)
 local sc2 = Instance.new("UICorner", SpdBox); sc2.CornerRadius = UDim.new(0, 4)
 
--- อัปเดตตัวแปรทันทีที่พิมพ์ (Real-time update)
 SpdBox:GetPropertyChangedSignal("Text"):Connect(function()
 	targetSpeed = tonumber(SpdBox.Text) or 16
 	if targetSpeed > 1000 then targetSpeed = 1000; SpdBox.Text = "1000" end
@@ -347,27 +348,85 @@ SpdBtn.MouseButton1Click:Connect(function()
 	isSpeedEnabled = not isSpeedEnabled
 	SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF")
 	SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8)
-	
-	-- บังคับอ่านค่าอีกรอบเมื่อกดปุ่ม เพื่อความชัวร์
 	targetSpeed = tonumber(SpdBox.Text) or 16
-	
 	if not isSpeedEnabled and LocalPlayer.Character then
 		LocalPlayer.Character.Humanoid.WalkSpeed = 16
 	end
 end)
-
--- Speed Loop Logic (Fix Bug)
 RunService.RenderStepped:Connect(function()
 	if isSpeedEnabled and LocalPlayer.Character then
 		local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
-		if hum then 
-			hum.WalkSpeed = targetSpeed 
+		if hum then hum.WalkSpeed = targetSpeed end
+	end
+end)
+
+-- 5. Fullbright Slider (NEW!)
+local rBright = createRow(50, 5)
+local BrightLbl = Instance.new("TextLabel", rBright)
+BrightLbl.Text = "Brightness: " .. math.floor(Lighting.Brightness)
+BrightLbl.Size = UDim2.new(1, 0, 0, 20)
+BrightLbl.Position = UDim2.new(0, 0, 0, 0)
+BrightLbl.BackgroundTransparency = 1
+BrightLbl.TextColor3 = Color3.new(1,1,1)
+BrightLbl.Font = Enum.Font.GothamBold
+
+-- Slider Bar
+local SliderBar = Instance.new("Frame", rBright)
+SliderBar.Size = UDim2.new(0.8, 0, 0, 6)
+SliderBar.Position = UDim2.new(0.1, 0, 0, 30)
+SliderBar.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+local sbCorner = Instance.new("UICorner", SliderBar); sbCorner.CornerRadius = UDim.new(1, 0)
+
+-- Slider Fill (สีฟ้าที่วิ่งตาม)
+local SliderFill = Instance.new("Frame", SliderBar)
+SliderFill.Size = UDim2.new(Lighting.Brightness / 10, 0, 1, 0) -- เริ่มต้นตามค่าแสงปัจจุบัน
+SliderFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+local sfCorner = Instance.new("UICorner", SliderFill); sfCorner.CornerRadius = UDim.new(1, 0)
+
+-- Slider Knob (ปุ่มกลมๆ)
+local SliderBtn = Instance.new("TextButton", SliderBar)
+SliderBtn.Size = UDim2.new(0, 12, 0, 12)
+SliderBtn.Position = UDim2.new(Lighting.Brightness / 10, -6, 0.5, -6)
+SliderBtn.Text = ""
+SliderBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+local skCorner = Instance.new("UICorner", SliderBtn); skCorner.CornerRadius = UDim.new(1, 0)
+
+local draggingSlider = false
+
+SliderBtn.MouseButton1Down:Connect(function() draggingSlider = true end)
+UserInputService.InputEnded:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then draggingSlider = false end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+	if draggingSlider and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local mousePos = UserInputService:GetMouseLocation().X
+		local barPos = SliderBar.AbsolutePosition.X
+		local barSize = SliderBar.AbsoluteSize.X
+		
+		-- คำนวณเปอร์เซ็นต์ (0 ถึง 1)
+		local percent = math.clamp((mousePos - barPos) / barSize, 0, 1)
+		
+		-- ขยับปุ่มและหลอดสี
+		SliderBtn.Position = UDim2.new(percent, -6, 0.5, -6)
+		SliderFill.Size = UDim2.new(percent, 0, 1, 0)
+		
+		-- ปรับค่าแสง (0 ถึง 10)
+		local brightnessValue = percent * 10
+		Lighting.Brightness = brightnessValue
+		
+		-- อัปเดตตัวเลข
+		BrightLbl.Text = "Brightness: " .. string.format("%.1f", brightnessValue)
+		
+		-- Optional: ปรับ ClockTime ให้เป็นกลางวันเสมอถ้าแสงเยอะ
+		if brightnessValue > 2 then
+			Lighting.ClockTime = 14
 		end
 	end
 end)
 
--- 5. ESP
-local r5 = createRow(30, 5)
+-- 6. ESP
+local r5 = createRow(30, 6)
 local EspBtn = Instance.new("TextButton", r5)
 EspBtn.Size = UDim2.new(1,0,1,0); EspBtn.BackgroundTransparency=1; EspBtn.Text="ESP Players: OFF"; EspBtn.TextColor3=Color3.fromRGB(200,200,200); EspBtn.Font=Enum.Font.Gotham
 EspBtn.MouseButton1Click:Connect(function()
@@ -379,8 +438,8 @@ EspBtn.MouseButton1Click:Connect(function()
 	end
 end)
 
--- 6. TP Player
-local r6 = createRow(110, 6)
+-- 7. TP Player
+local r6 = createRow(110, 7)
 local TpLbl = Instance.new("TextLabel", r6); TpLbl.Text="Teleport to Player"; TpLbl.Size=UDim2.new(1,0,0,20); TpLbl.BackgroundTransparency=1; TpLbl.TextColor3=Color3.new(1,1,1); TpLbl.Font=Enum.Font.GothamBold; TpLbl.Position=UDim2.new(0,0,0,5)
 local TpScroll = Instance.new("ScrollingFrame", r6)
 TpScroll.Size = UDim2.new(0.9, 0, 0, 70); TpScroll.Position = UDim2.new(0.05, 0, 0, 30); TpScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20); TpScroll.CanvasSize = UDim2.new(0,0,0,0); TpScroll.ScrollBarThickness = 2
@@ -398,8 +457,8 @@ local function RefreshPlayerList()
 end
 RefreshTp.MouseButton1Click:Connect(RefreshPlayerList); RefreshPlayerList()
 
--- 7. Waypoints
-local r7 = createRow(140, 7)
+-- 8. Waypoints
+local r7 = createRow(140, 8)
 local WpLbl = Instance.new("TextLabel", r7); WpLbl.Text="Waypoints System"; WpLbl.Size=UDim2.new(1,0,0,20); WpLbl.BackgroundTransparency=1; WpLbl.TextColor3=Color3.new(1,1,1); WpLbl.Font=Enum.Font.GothamBold; WpLbl.Position=UDim2.new(0,0,0,5)
 local WpBox = Instance.new("TextBox", r7); WpBox.Size=UDim2.new(0.6,0,0,25); WpBox.Position=UDim2.new(0.05,0,0,30); WpBox.PlaceholderText="Name..."; WpBox.BackgroundColor3=Color3.fromRGB(30,30,30); WpBox.TextColor3=Color3.new(1,1,1)
 local AddWp = Instance.new("TextButton", r7); AddWp.Size=UDim2.new(0.25,0,0,25); AddWp.Position=UDim2.new(0.7,0,0,30); AddWp.Text="Add"; AddWp.BackgroundColor3=Color3.fromRGB(0,80,200); AddWp.TextColor3=Color3.new(1,1,1)
