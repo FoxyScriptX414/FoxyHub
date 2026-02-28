@@ -29,7 +29,7 @@ clearOldHubs()
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FoxyHub_Master"
+ScreenGui.Name = "FoxyHub_Ultimate_v5"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -64,6 +64,11 @@ local isAiming = false
 local shiftLockSystemEnabled = false
 local isShiftLocked = false
 
+-- ESP Variables
+local espDangerDist = 50
+local espTextSize = 14
+local espDrag = false
+
 -- *** HELPER: SMART TELEPORT (Vehicle Support) ***
 local function SmartTeleport(targetCFrame)
 	local char = LocalPlayer.Character
@@ -87,8 +92,8 @@ end
 -- 1. Main Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 500, 0, 550)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -275)
+MainFrame.Size = UDim2.new(0, 500, 0, 580) -- เพิ่มขนาดหน้าจอหลักอีกนิดรับ Waypoint ใหญ่ขึ้น
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -290)
 MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -380,12 +385,44 @@ local function UpdateSpd(val) targetSpeed = math.clamp(val, 0, 500); SpdBox.Text
 local spdDrag = false; SpdDot.MouseButton1Down:Connect(function() spdDrag = true end); SpdBox.FocusLost:Connect(function() UpdateSpd(tonumber(SpdBox.Text) or 16) end)
 SpdBtn.MouseButton1Click:Connect(function() isSpeedEnabled = not isSpeedEnabled; SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF"); SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8); if not isSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 16 end end)
 
--- 6. ESP
-local r6 = createRow(30, 6, GenPageScroll)
-local EspBtn = Instance.new("TextButton", r6); EspBtn.Size = UDim2.new(1,0,1,0); EspBtn.BackgroundTransparency=1; EspBtn.Text="ESP Players: OFF"; EspBtn.TextColor3=Color3.fromRGB(200,200,200); EspBtn.Font=Enum.Font.Gotham
+-- 6. ESP (UPDATED: SIZE, DANGER DIST, HP & METER)
+local r6 = createRow(90, 6, GenPageScroll) -- เพิ่มความสูงให้ ESP
+local EspBtn = Instance.new("TextButton", r6); EspBtn.Size = UDim2.new(0.4,0,0,25); EspBtn.Position=UDim2.new(0.05,0,0,5); EspBtn.BackgroundTransparency=1; EspBtn.Text="ESP Players: OFF"; EspBtn.TextColor3=Color3.fromRGB(200,200,200); EspBtn.Font=Enum.Font.Gotham; EspBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+local DangerLbl = Instance.new("TextLabel", r6); DangerLbl.Size=UDim2.new(0.3,0,0,25); DangerLbl.Position=UDim2.new(0.5,0,0,5); DangerLbl.BackgroundTransparency=1; DangerLbl.Text="Danger Dist:"; DangerLbl.TextColor3=Color3.new(1,1,1); DangerLbl.Font=Enum.Font.Gotham; DangerLbl.TextXAlignment = Enum.TextXAlignment.Right
+local DangerBox = Instance.new("TextBox", r6); DangerBox.Size=UDim2.new(0.15,0,0,20); DangerBox.Position=UDim2.new(0.82,0,0,7.5); DangerBox.BackgroundColor3=Color3.fromRGB(30,30,30); DangerBox.TextColor3=Color3.new(1,1,1); DangerBox.Text="50"; Instance.new("UICorner", DangerBox).CornerRadius=UDim.new(0,4)
+
+local EspSizeLbl = Instance.new("TextLabel", r6); EspSizeLbl.Size=UDim2.new(0.3,0,0,25); EspSizeLbl.Position=UDim2.new(0.05,0,0,35); EspSizeLbl.BackgroundTransparency=1; EspSizeLbl.Text="Text Size: 14"; EspSizeLbl.TextColor3=Color3.new(1,1,1); EspSizeLbl.Font=Enum.Font.Gotham; EspSizeLbl.TextXAlignment = Enum.TextXAlignment.Left
+local EspSlider = Instance.new("Frame", r6); EspSlider.Size = UDim2.new(0.9, 0, 0, 4); EspSlider.Position = UDim2.new(0.05, 0, 0, 65); EspSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+local EspFill = Instance.new("Frame", EspSlider); EspFill.Size = UDim2.new((14-8)/(32-8), 0, 1, 0); EspFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+local EspDot = Instance.new("TextButton", EspSlider); EspDot.Size = UDim2.new(0, 12, 0, 12); EspDot.Position = UDim2.new((14-8)/(32-8), -6, 0.5, -6); EspDot.Text = ""; EspDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", EspDot).CornerRadius = UDim.new(1, 0)
+
+DangerBox.FocusLost:Connect(function() espDangerDist = tonumber(DangerBox.Text) or 50 end)
+EspDot.MouseButton1Down:Connect(function() espDrag = true end)
+local function UpdateEspSize(val)
+	espTextSize = math.clamp(math.floor(val), 8, 32); EspSizeLbl.Text = "Text Size: " .. espTextSize
+	local percent = (espTextSize - 8) / (32 - 8); EspFill.Size = UDim2.new(percent, 0, 1, 0); EspDot.Position = UDim2.new(percent, -6, 0.5, -6)
+end
+
 local function ClearESP() for _, p in pairs(Players:GetPlayers()) do if p.Character and p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("ESP_Tag") then p.Character.Head.ESP_Tag:Destroy() end end end
-local function AddEsp(p) if not espEnabled or p == LocalPlayer then return end; local function app(c) if not espEnabled then return end; local h = c:WaitForChild("Head", 5); if not h or h:FindFirstChild("ESP_Tag") then return end; local b = Instance.new("BillboardGui", h); b.Name="ESP_Tag"; b.Size=UDim2.new(0,100,0,50); b.StudsOffset=Vector3.new(0,2,0); b.AlwaysOnTop=true; local t = Instance.new("TextLabel", b); t.Size=UDim2.new(1,0,0.5,0); t.BackgroundTransparency=1; t.Text=p.Name; t.TextColor3=Color3.new(1,1,1); t.TextStrokeTransparency=0; local hp = Instance.new("TextLabel", b); hp.Size=UDim2.new(1,0,0.5,0); hp.Position=UDim2.new(0,0,0.5,0); hp.BackgroundTransparency=1; hp.TextColor3=Color3.new(0,1,0); hp.TextStrokeTransparency=0; local hum = c:WaitForChild("Humanoid", 5); if hum then hp.Text="HP: "..math.floor(hum.Health); hum.HealthChanged:Connect(function() hp.Text="HP: "..math.floor(hum.Health) end) end end; if p.Character then app(p.Character) end; p.CharacterAdded:Connect(app) end
-EspBtn.MouseButton1Click:Connect(function() espEnabled = not espEnabled; EspBtn.Text = "ESP Players: "..(espEnabled and "ON" or "OFF"); EspBtn.TextColor3 = espEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); if espEnabled then for _,p in pairs(Players:GetPlayers()) do AddEsp(p) end else ClearESP() end end); Players.PlayerAdded:Connect(AddEsp)
+local function AddEsp(p) 
+	if not espEnabled or p == LocalPlayer then return end
+	local function app(c) 
+		if not espEnabled then return end
+		local h = c:WaitForChild("Head", 5)
+		if not h or h:FindFirstChild("ESP_Tag") then return end
+		local b = Instance.new("BillboardGui", h); b.Name="ESP_Tag"; b.Size=UDim2.new(0,250,0,50); b.StudsOffset=Vector3.new(0,3,0); b.AlwaysOnTop=true
+		local nameLbl = Instance.new("TextLabel", b); nameLbl.Name = "NameLbl"; nameLbl.Size=UDim2.new(1,0,0.5,0); nameLbl.BackgroundTransparency=1; nameLbl.Text=p.Name; nameLbl.TextColor3=Color3.fromRGB(150,150,150); nameLbl.TextStrokeTransparency=0; nameLbl.Font = Enum.Font.GothamBold; nameLbl.TextSize = espTextSize
+		local statsLbl = Instance.new("TextLabel", b); statsLbl.Name = "StatsLbl"; statsLbl.Size=UDim2.new(1,0,0.5,0); statsLbl.Position=UDim2.new(0,0,0.5,0); statsLbl.BackgroundTransparency=1; statsLbl.TextColor3=Color3.new(0,1,0); statsLbl.TextStrokeTransparency=0; statsLbl.Font = Enum.Font.GothamBold; statsLbl.TextSize = espTextSize; statsLbl.Text = "HP: 100 | Dist: 0m"
+	end
+	if p.Character then app(p.Character) end; p.CharacterAdded:Connect(app) 
+end
+
+EspBtn.MouseButton1Click:Connect(function() 
+	espEnabled = not espEnabled; EspBtn.Text = "ESP Players: "..(espEnabled and "ON" or "OFF"); EspBtn.TextColor3 = espEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
+	if espEnabled then for _,p in pairs(Players:GetPlayers()) do AddEsp(p) end else ClearESP() end 
+end)
+Players.PlayerAdded:Connect(AddEsp)
 
 -- 7. Spectate
 local r7 = createRow(35, 7, GenPageScroll)
@@ -400,32 +437,14 @@ local r8 = createRow(30, 8, GenPageScroll)
 local FreezeBtn = Instance.new("TextButton", r8); FreezeBtn.Size = UDim2.new(1,0,1,0); FreezeBtn.BackgroundTransparency=1; FreezeBtn.Text="Freeze Character: OFF"; FreezeBtn.TextColor3=Color3.fromRGB(200,200,200); FreezeBtn.Font=Enum.Font.Gotham
 FreezeBtn.MouseButton1Click:Connect(function() isFrozen = not isFrozen; FreezeBtn.Text = "Freeze Character: "..(isFrozen and "ON" or "OFF"); FreezeBtn.TextColor3 = isFrozen and Color3.new(0,1,1) or Color3.new(0.8,0.8,0.8); if not isFrozen and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then LocalPlayer.Character.HumanoidRootPart.Anchored = false end end)
 
--- 9. Click TP (UPDATED: Can Change Keybind)
+-- 9. Click TP
 local r9 = createRow(30, 9, GenPageScroll)
-local CtrlTpBtn = Instance.new("TextButton", r9)
-CtrlTpBtn.Size = UDim2.new(0.6,0,1,0); CtrlTpBtn.BackgroundTransparency=1; CtrlTpBtn.Text="Click TP: OFF"; CtrlTpBtn.TextColor3=Color3.fromRGB(200,200,200); CtrlTpBtn.Font=Enum.Font.Gotham; CtrlTpBtn.TextXAlignment = Enum.TextXAlignment.Left; CtrlTpBtn.Position = UDim2.new(0, 10, 0, 0)
-
-local CtrlTpKeyBtn = Instance.new("TextButton", r9)
-CtrlTpKeyBtn.Size = UDim2.new(0.3, 0, 0, 25); CtrlTpKeyBtn.Position = UDim2.new(0.65, 0, 0, 2.5); CtrlTpKeyBtn.Text = "Key: LCtrl"; CtrlTpKeyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); CtrlTpKeyBtn.TextColor3 = Color3.new(0,1,1); Instance.new("UICorner", CtrlTpKeyBtn).CornerRadius = UDim.new(0,4)
-
-CtrlTpBtn.MouseButton1Click:Connect(function()
-	ctrlTpEnabled = not ctrlTpEnabled
-	CtrlTpBtn.Text = "Click TP: "..(ctrlTpEnabled and "ON" or "OFF")
-	CtrlTpBtn.TextColor3 = ctrlTpEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
-end)
-
+local CtrlTpBtn = Instance.new("TextButton", r9); CtrlTpBtn.Size = UDim2.new(0.6,0,1,0); CtrlTpBtn.BackgroundTransparency=1; CtrlTpBtn.Text="Click TP: OFF"; CtrlTpBtn.TextColor3=Color3.fromRGB(200,200,200); CtrlTpBtn.Font=Enum.Font.Gotham; CtrlTpBtn.TextXAlignment = Enum.TextXAlignment.Left; CtrlTpBtn.Position = UDim2.new(0, 10, 0, 0)
+local CtrlTpKeyBtn = Instance.new("TextButton", r9); CtrlTpKeyBtn.Size = UDim2.new(0.3, 0, 0, 25); CtrlTpKeyBtn.Position = UDim2.new(0.65, 0, 0, 2.5); CtrlTpKeyBtn.Text = "Key: LCtrl"; CtrlTpKeyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); CtrlTpKeyBtn.TextColor3 = Color3.new(0,1,1); Instance.new("UICorner", CtrlTpKeyBtn).CornerRadius = UDim.new(0,4)
+CtrlTpBtn.MouseButton1Click:Connect(function() ctrlTpEnabled = not ctrlTpEnabled; CtrlTpBtn.Text = "Click TP: "..(ctrlTpEnabled and "ON" or "OFF"); CtrlTpBtn.TextColor3 = ctrlTpEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8) end)
 local tpListening = false
 CtrlTpKeyBtn.MouseButton1Click:Connect(function() tpListening = true; CtrlTpKeyBtn.Text = "..." end)
-UserInputService.InputBegan:Connect(function(input)
-	if tpListening and input.UserInputType == Enum.UserInputType.Keyboard then
-		clickTpKey = input.KeyCode
-		local keyStr = tostring(clickTpKey):gsub("Enum.KeyCode.", "")
-		if keyStr == "LeftControl" then keyStr = "LCtrl" end
-		if keyStr == "RightControl" then keyStr = "RCtrl" end
-		CtrlTpKeyBtn.Text = "Key: "..keyStr
-		tpListening = false
-	end
-end)
+UserInputService.InputBegan:Connect(function(input) if tpListening and input.UserInputType == Enum.UserInputType.Keyboard then clickTpKey = input.KeyCode; local keyStr = tostring(clickTpKey):gsub("Enum.KeyCode.", ""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; if keyStr == "RightControl" then keyStr = "RCtrl" end; CtrlTpKeyBtn.Text = "Key: "..keyStr; tpListening = false end end)
 Mouse.Button1Down:Connect(function() if ctrlTpEnabled and UserInputService:IsKeyDown(clickTpKey) and Mouse.Hit then SmartTeleport(CFrame.new(Mouse.Hit.Position)) end end)
 
 -- 10. TP Player
@@ -453,27 +472,29 @@ RefreshTp.MouseButton1Click:Connect(function() RefreshPlayerList(TpSearch.Text) 
 TpSearch.Changed:Connect(function(prop) if prop == "Text" then RefreshPlayerList(TpSearch.Text) end end)
 RefreshPlayerList("")
 
--- 11. Waypoints
-local r11 = createRow(140, 11, GenPageScroll)
+-- 11. Waypoints (UPDATED: TALLER & BIGGER FONT)
+local r11 = createRow(250, 11, GenPageScroll) -- เพิ่มความสูงกล่องเป็น 250
 local WpLbl = Instance.new("TextLabel", r11); WpLbl.Text="Waypoints System"; WpLbl.Size=UDim2.new(1,0,0,20); WpLbl.BackgroundTransparency=1; WpLbl.TextColor3=Color3.new(1,1,1); WpLbl.Font=Enum.Font.GothamBold; WpLbl.Position=UDim2.new(0,0,0,5)
 local WpBox = Instance.new("TextBox", r11); WpBox.Size=UDim2.new(0.6,0,0,25); WpBox.Position=UDim2.new(0.05,0,0,30); WpBox.PlaceholderText="Name..."; WpBox.BackgroundColor3=Color3.fromRGB(30,30,30); WpBox.TextColor3=Color3.new(1,1,1)
 local AddWp = Instance.new("TextButton", r11); AddWp.Size=UDim2.new(0.25,0,0,25); AddWp.Position=UDim2.new(0.7,0,0,30); AddWp.Text="Add"; AddWp.BackgroundColor3=Color3.fromRGB(0,80,200); AddWp.TextColor3=Color3.new(1,1,1)
-local WpScroll = Instance.new("ScrollingFrame", r11); WpScroll.Size=UDim2.new(0.9,0,0,70); WpScroll.Position=UDim2.new(0.05,0,0,60); WpScroll.BackgroundColor3=Color3.fromRGB(20,20,20); WpScroll.ScrollBarThickness=2
+
+local WpScroll = Instance.new("ScrollingFrame", r11); WpScroll.Size=UDim2.new(0.9,0,0,180); WpScroll.Position=UDim2.new(0.05,0,0,60); WpScroll.BackgroundColor3=Color3.fromRGB(20,20,20); WpScroll.ScrollBarThickness=3 -- ขยายความสูงจุดแสดงผล
 local WpList = Instance.new("UIListLayout", WpScroll); WpList.Padding=UDim.new(0,2)
+
 local function RefreshWp()
 	for _,v in pairs(WpScroll:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
 	for name, cf in pairs(waypoints) do
-		local f = Instance.new("Frame", WpScroll); f.Size=UDim2.new(1,0,0,25); f.BackgroundTransparency=1
-		local b = Instance.new("TextButton", f); b.Size=UDim2.new(0.75,0,1,0); b.Text="  "..name; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.TextXAlignment=Enum.TextXAlignment.Left; b.Font=Enum.Font.Gotham
+		local f = Instance.new("Frame", WpScroll); f.Size=UDim2.new(1,0,0,30); f.BackgroundTransparency=1 -- เพิ่มความสูงต่อบรรทัด
+		local b = Instance.new("TextButton", f); b.Size=UDim2.new(0.75,0,1,0); b.Text="  "..name; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.TextXAlignment=Enum.TextXAlignment.Left; b.Font=Enum.Font.Gotham; b.TextSize=16 -- ฟอนต์ใหญ่ขึ้น
 		b.MouseButton1Click:Connect(function() SmartTeleport(cf) end)
-		local d = Instance.new("TextButton", f); d.Size=UDim2.new(0.2,0,1,0); d.Position=UDim2.new(0.8,0,0,0); d.Text="Del"; d.BackgroundColor3=Color3.fromRGB(200,50,50); d.TextColor3=Color3.new(1,1,1); d.Font=Enum.Font.GothamBold
+		local d = Instance.new("TextButton", f); d.Size=UDim2.new(0.2,0,1,0); d.Position=UDim2.new(0.8,0,0,0); d.Text="Del"; d.BackgroundColor3=Color3.fromRGB(200,50,50); d.TextColor3=Color3.new(1,1,1); d.Font=Enum.Font.GothamBold; d.TextSize=16 -- ฟอนต์ใหญ่ขึ้น
 		d.MouseButton1Click:Connect(function() waypoints[name]=nil; RefreshWp() end)
 	end
 	WpScroll.CanvasSize = UDim2.new(0,0,0,WpList.AbsoluteContentSize.Y)
 end
 AddWp.MouseButton1Click:Connect(function() local name = WpBox.Text; if name ~= "" and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then waypoints[name] = LocalPlayer.Character.HumanoidRootPart.CFrame; WpBox.Text = ""; RefreshWp() end end)
 
--- 12. AIMLOCK SYSTEM (UPDATED: TOGGLE)
+-- 12. AIMLOCK SYSTEM
 local r12 = createRow(160, 12, GenPageScroll)
 local AimTitle = Instance.new("TextLabel", r12); AimTitle.Text = "Aimlock System (Toggle)"; AimTitle.Size=UDim2.new(1,0,0,20); AimTitle.Position=UDim2.new(0,0,0,5); AimTitle.BackgroundTransparency=1; AimTitle.TextColor3=Color3.new(1,1,1); AimTitle.Font=Enum.Font.GothamBold
 
@@ -506,16 +527,10 @@ local aimListening = false
 AimKeyBtn.MouseButton1Click:Connect(function() aimListening = true; AimKeyBtn.Text = "..." end)
 UserInputService.InputBegan:Connect(function(input, gp)
 	if aimListening and input.UserInputType == Enum.UserInputType.Keyboard then
-		aimlockKey = input.KeyCode
-		local keyStr = tostring(aimlockKey):gsub("Enum.KeyCode.","")
-		if keyStr == "LeftControl" then keyStr = "LCtrl" end
-		AimKeyBtn.Text = "Key: "..keyStr; aimListening = false
+		aimlockKey = input.KeyCode; local keyStr = tostring(aimlockKey):gsub("Enum.KeyCode.",""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; AimKeyBtn.Text = "Key: "..keyStr; aimListening = false
 	elseif not gp and input.KeyCode == aimlockKey then
-		-- *** TOGGLE AIMLOCK ***
 		isAiming = not isAiming
-		if not isAiming and not isShiftLocked then
-			UserInputService.MouseBehavior = Enum.MouseBehavior.Default
-		end
+		if not isAiming and not isShiftLocked then UserInputService.MouseBehavior = Enum.MouseBehavior.Default end
 	end
 end)
 
@@ -560,7 +575,7 @@ local BriFill = Instance.new("Frame", BriSlider); BriFill.Size = UDim2.new(Light
 local BriDot = Instance.new("TextButton", BriSlider); BriDot.Size = UDim2.new(0, 12, 0, 12); BriDot.Position = UDim2.new(Lighting.Brightness/10, -6, 0.5, -6); BriDot.Text = ""; BriDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", BriDot).CornerRadius = UDim.new(1, 0)
 local isMaxBri = false; local origLighting = {Brightness = Lighting.Brightness, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient, GlobalShadows = Lighting.GlobalShadows, ClockTime = Lighting.ClockTime}
 local function UpdateBri(val) local b = math.clamp(val, 0, 10); Lighting.Brightness = b; local percent = b / 10; BriFill.Size = UDim2.new(percent, 0, 1, 0); BriDot.Position = UDim2.new(percent, -6, 0.5, -6) end
-local briDrag = false; BriDot.MouseButton1Down:Connect(function() briDrag = true end)
+local briDrag2 = false; BriDot.MouseButton1Down:Connect(function() briDrag2 = true end)
 MaxBtn.MouseButton1Click:Connect(function() isMaxBri = not isMaxBri; MaxBtn.Text = "Max: "..(isMaxBri and "ON" or "OFF"); MaxBtn.BackgroundColor3 = isMaxBri and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40); if isMaxBri then origLighting.Brightness = Lighting.Brightness; origLighting.Ambient = Lighting.Ambient; origLighting.OutdoorAmbient = Lighting.OutdoorAmbient; origLighting.GlobalShadows = Lighting.GlobalShadows; origLighting.ClockTime = Lighting.ClockTime else Lighting.Brightness = origLighting.Brightness; Lighting.Ambient = origLighting.Ambient; Lighting.OutdoorAmbient = origLighting.OutdoorAmbient; Lighting.GlobalShadows = origLighting.GlobalShadows; Lighting.ClockTime = origLighting.ClockTime end end)
 
 local KeyFrame = createRow(40, 7, SetPageScroll)
@@ -581,29 +596,59 @@ CopyBtn.MouseButton1Click:Connect(function() setclipboard(game.JobId); CopyBtn.T
 
 -- *** FIXED MAIN LOOP ***
 RunService.RenderStepped:Connect(function()
-	if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then flyDrag = false; spdDrag = false; briDrag = false; jmpDrag = false end
+	if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then 
+		flyDrag = false; spdDrag = false; briDrag2 = false; jmpDrag = false; espDrag = false
+	end
 	local mousePos = UserInputService:GetMouseLocation().X
 	if flyDrag then local pos = math.clamp((mousePos - FlySlider.AbsolutePosition.X) / FlySlider.AbsoluteSize.X, 0, 1); UpdateFly(pos * 500) end
 	if spdDrag then local pos = math.clamp((mousePos - SpdSlider.AbsolutePosition.X) / SpdSlider.AbsoluteSize.X, 0, 1); UpdateSpd(pos * 500) end
 	if jmpDrag then local pos = math.clamp((mousePos - JmpSlider.AbsolutePosition.X) / JmpSlider.AbsoluteSize.X, 0, 1); UpdateJmp(pos * 500) end
-	if briDrag then local pos = math.clamp((mousePos - BriSlider.AbsolutePosition.X) / BriSlider.AbsoluteSize.X, 0, 1); UpdateBri(pos * 10); if isMaxBri then isMaxBri = false; MaxBtn.Text = "Max: OFF"; MaxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end end
+	if briDrag2 then local pos = math.clamp((mousePos - BriSlider.AbsolutePosition.X) / BriSlider.AbsoluteSize.X, 0, 1); UpdateBri(pos * 10); if isMaxBri then isMaxBri = false; MaxBtn.Text = "Max: OFF"; MaxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end end
+	if espDrag then local pos = math.clamp((mousePos - EspSlider.AbsolutePosition.X) / EspSlider.AbsoluteSize.X, 0, 1); UpdateEspSize(8 + pos * (32 - 8)) end
 
 	if isSpeedEnabled and LocalPlayer.Character then local hum = LocalPlayer.Character:FindFirstChild("Humanoid"); if hum then hum.WalkSpeed = targetSpeed end end
 	if isJumpEnabled and LocalPlayer.Character then local hum = LocalPlayer.Character:FindFirstChild("Humanoid"); if hum then hum.UseJumpPower = true; hum.JumpPower = targetJump end end
 	if isMaxBri then Lighting.Brightness = 2; Lighting.Ambient = Color3.new(1, 1, 1); Lighting.OutdoorAmbient = Color3.new(1, 1, 1); Lighting.GlobalShadows = false; Lighting.ClockTime = 14 end
 	if isFrozen and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then local hrp = LocalPlayer.Character.HumanoidRootPart; hrp.Anchored = true; hrp.Velocity = Vector3.new(0,0,0); hrp.RotVelocity = Vector3.new(0,0,0) end
 	
+	-- ESP REAL-TIME UPDATER (UPDATE DISTANCE & COLOR)
+	if espEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+		local myPos = LocalPlayer.Character.HumanoidRootPart.Position
+		for _, p in pairs(Players:GetPlayers()) do
+			if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") then
+				local head = p.Character:FindFirstChild("Head")
+				if head then
+					local tag = head:FindFirstChild("ESP_Tag")
+					if tag then
+						local nLbl = tag:FindFirstChild("NameLbl")
+						local sLbl = tag:FindFirstChild("StatsLbl")
+						if nLbl and sLbl then
+							local dist = (myPos - p.Character.HumanoidRootPart.Position).Magnitude
+							sLbl.Text = string.format("HP: %d | Dist: %dm", math.floor(p.Character.Humanoid.Health), math.floor(dist))
+							nLbl.TextSize = espTextSize
+							sLbl.TextSize = espTextSize
+							
+							if dist <= espDangerDist then
+								nLbl.TextColor3 = Color3.new(1, 0, 0)
+								sLbl.TextColor3 = Color3.new(1, 0, 0)
+							else
+								nLbl.TextColor3 = Color3.fromRGB(150, 150, 150)
+								sLbl.TextColor3 = Color3.new(0, 1, 0)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
 	-- TRUE AIMLOCK & SHIFTLOCK LOGIC
 	local currentlyLockedCenter = false
-	
 	if isAiming and aimlockTarget and aimlockTarget.Character and aimlockTarget.Character:FindFirstChild("Head") and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
 		local targetPos = aimlockTarget.Character.Head.Position
 		local hrp = LocalPlayer.Character.HumanoidRootPart
-		-- 1. บังคับหันกล้องไปหาเป้าหมาย
 		Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPos)
-		-- 2. บังคับหันตัวละครไปหาเป้าหมาย
 		hrp.CFrame = CFrame.new(hrp.Position, Vector3.new(targetPos.X, hrp.Position.Y, targetPos.Z))
-		-- 3. ล็อคเมาส์
 		currentlyLockedCenter = true
 	elseif isShiftLocked and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
 		LocalPlayer.Character.Humanoid.AutoRotate = false
@@ -613,8 +658,5 @@ RunService.RenderStepped:Connect(function()
 	elseif not isAiming and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
 		LocalPlayer.Character.Humanoid.AutoRotate = true
 	end
-	
-	if currentlyLockedCenter then
-		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
-	end
+	if currentlyLockedCenter then UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter end
 end)
