@@ -25,11 +25,38 @@ clearOldHubs()
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FoxyHub_Ultimate_v6"
+ScreenGui.Name = "FoxyHub_Ultimate_v7"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
 if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- *** Fx TOGGLE ICON (NEW) ***
+local ToggleIcon = Instance.new("TextButton", ScreenGui)
+ToggleIcon.Name = "FoxyToggle"
+ToggleIcon.Size = UDim2.new(0, 45, 0, 45)
+ToggleIcon.Position = UDim2.new(0, 20, 0.5, -22)
+ToggleIcon.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+ToggleIcon.Text = "Fx"
+ToggleIcon.TextColor3 = Color3.fromRGB(0, 150, 255)
+ToggleIcon.Font = Enum.Font.GothamBlack
+ToggleIcon.TextSize = 22
+Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(1, 0)
+Instance.new("UIStroke", ToggleIcon).Color = Color3.fromRGB(0, 100, 255); Instance.new("UIStroke", ToggleIcon).Thickness = 2
+
+local tDrag, tStart, tPos
+ToggleIcon.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+		tDrag = true; tStart = input.Position; tPos = ToggleIcon.Position
+		input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then tDrag = false end end)
+	end
+end)
+UserInputService.InputChanged:Connect(function(input)
+	if tDrag and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+		local delta = input.Position - tStart
+		ToggleIcon.Position = UDim2.new(tPos.X.Scale, tPos.X.Offset + delta.X, tPos.Y.Scale, tPos.Y.Offset + delta.Y)
+	end
+end)
 
 -- *** TOAST NOTIFICATION SYSTEM ***
 local NotifContainer = Instance.new("Frame", ScreenGui)
@@ -45,7 +72,6 @@ local function Notify(title, text, duration)
 	local tLbl = Instance.new("TextLabel", f); tLbl.Size = UDim2.new(1, -20, 0, 20); tLbl.Position = UDim2.new(0, 10, 0, 5); tLbl.BackgroundTransparency = 1; tLbl.Text = title; tLbl.TextColor3 = Color3.fromRGB(0, 150, 255); tLbl.Font = Enum.Font.GothamBold; tLbl.TextSize = 14; tLbl.TextXAlignment = Enum.TextXAlignment.Left; tLbl.TextTransparency = 1
 	local dLbl = Instance.new("TextLabel", f); dLbl.Size = UDim2.new(1, -20, 0, 30); dLbl.Position = UDim2.new(0, 10, 0, 25); dLbl.BackgroundTransparency = 1; dLbl.Text = text; dLbl.TextColor3 = Color3.new(1,1,1); dLbl.Font = Enum.Font.Gotham; dLbl.TextSize = 12; dLbl.TextWrapped = true; dLbl.TextXAlignment = Enum.TextXAlignment.Left; dLbl.TextTransparency = 1
 	
-	-- Slide In
 	f.Position = UDim2.new(1, 50, 0, 0)
 	TweenService:Create(f, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {BackgroundTransparency = 0, Position = UDim2.new(0,0,0,0)}):Play()
 	TweenService:Create(s, TweenInfo.new(0.5), {Transparency = 0}):Play()
@@ -54,7 +80,6 @@ local function Notify(title, text, duration)
 	
 	task.spawn(function()
 		task.wait(duration)
-		-- Slide Out
 		TweenService:Create(f, TweenInfo.new(0.5, Enum.EasingStyle.Quint, Enum.EasingDirection.In), {BackgroundTransparency = 1, Position = UDim2.new(1,50,0,0)}):Play()
 		TweenService:Create(s, TweenInfo.new(0.5), {Transparency = 1}):Play()
 		TweenService:Create(tLbl, TweenInfo.new(0.5), {TextTransparency = 1}):Play()
@@ -77,6 +102,8 @@ local espDangerDist = 50; local espTextSize = 14
 local MainFrame = Instance.new("Frame", ScreenGui); MainFrame.Name = "MainFrame"; MainFrame.Size = UDim2.new(0, 500, 0, 580); MainFrame.Position = UDim2.new(0.5, -250, 0.5, -290); MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); MainFrame.BorderSizePixel = 0; MainFrame.ClipsDescendants = true
 Instance.new("UIStroke", MainFrame).Color = Color3.fromRGB(0, 100, 255); Instance.new("UIStroke", MainFrame).Thickness = 2
 Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
+
+ToggleIcon.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
 -- Custom Drag
 local DragFrame = Instance.new("Frame", MainFrame); DragFrame.Size = UDim2.new(1, 0, 0, 40); DragFrame.BackgroundTransparency = 1
@@ -120,7 +147,6 @@ local InfoPage = createPage("Info", false); local InfoLayout = Instance.new("UIL
 local GenPageScroll = createPage("General", true); local GenLayout = Instance.new("UIListLayout", GenPageScroll); GenLayout.Padding = UDim.new(0, 8); GenLayout.SortOrder = Enum.SortOrder.LayoutOrder; pages["General"] = GenPageScroll
 local SetPageScroll = createPage("Setting", true); local SetLayout = Instance.new("UIListLayout", SetPageScroll); SetLayout.Padding = UDim.new(0, 8); SetLayout.SortOrder = Enum.SortOrder.LayoutOrder; pages["Setting"] = SetPageScroll
 
--- Auto Resize Canvas
 GenLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() GenPageScroll.CanvasSize = UDim2.new(0,0,0, GenLayout.AbsoluteContentSize.Y + 30) end)
 SetLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function() SetPageScroll.CanvasSize = UDim2.new(0,0,0, SetLayout.AbsoluteContentSize.Y + 30) end)
 
@@ -139,14 +165,12 @@ local startTime = tick()
 local function formatTime(seconds) local h = math.floor(seconds / 3600); local m = math.floor((seconds % 3600) / 60); local s = seconds % 60; return string.format("%02d:%02d:%02d", h, m, s) end
 RunService.RenderStepped:Connect(function() if InfoPage.Visible then InfoText.Text = string.format("\nUser: %s\nDisplay: %s\n\nPlayers: %d/%d\nFPS: %d\nTime: %s", LocalPlayer.Name, LocalPlayer.DisplayName, #Players:GetPlayers(), Players.MaxPlayers, math.floor(workspace:GetRealPhysicsFPS()), formatTime(math.floor(tick() - startTime))) end end)
 
--- Config System (Save/Load)
 local ConfigFrame = Instance.new("Frame", InfoPage); ConfigFrame.Size = UDim2.new(1,0,0,40); ConfigFrame.BackgroundTransparency=1
 local SaveBtn = Instance.new("TextButton", ConfigFrame); SaveBtn.Size = UDim2.new(0.48,0,1,0); SaveBtn.BackgroundColor3=Color3.fromRGB(0, 150, 100); SaveBtn.Text="Save Config"; SaveBtn.TextColor3=Color3.new(1,1,1); SaveBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", SaveBtn).CornerRadius=UDim.new(0,6)
 local LoadBtn = Instance.new("TextButton", ConfigFrame); LoadBtn.Size = UDim2.new(0.48,0,1,0); LoadBtn.Position = UDim2.new(0.52,0,0,0); LoadBtn.BackgroundColor3=Color3.fromRGB(200, 100, 0); LoadBtn.Text="Load Config"; LoadBtn.TextColor3=Color3.new(1,1,1); LoadBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", LoadBtn).CornerRadius=UDim.new(0,6)
 
 local cfgName = "FoxyHub_Config.json"
 local function UpdateUI_FromConfig()
-	-- Call this after load to update visual sliders
 	pcall(function() _G.UpdateFly(flySpeed) end); pcall(function() _G.UpdateSpd(targetSpeed) end); pcall(function() _G.UpdateJmp(targetJump) end); pcall(function() _G.UpdateEspSize(espTextSize) end)
 end
 
@@ -173,7 +197,6 @@ local function createRow(height, order, parent)
 	local row = Instance.new("Frame", parent); row.LayoutOrder = order; row.Size = UDim2.new(1, 0, 0, height or 30); row.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UIStroke", row).Color = Color3.fromRGB(0, 80, 200); Instance.new("UICorner", row).CornerRadius = UDim.new(0, 4); return row
 end
 
--- HELPER: Smart TP
 local function SmartTeleport(targetCFrame)
 	local char = LocalPlayer.Character; if not char then return end
 	local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
@@ -300,12 +323,13 @@ local tpListening = false; CtrlTpKeyBtn.MouseButton1Click:Connect(function() tpL
 UserInputService.InputBegan:Connect(function(input) if tpListening and input.UserInputType == Enum.UserInputType.Keyboard then clickTpKey = input.KeyCode; local keyStr = tostring(clickTpKey):gsub("Enum.KeyCode.", ""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; if keyStr == "RightControl" then keyStr = "RCtrl" end; CtrlTpKeyBtn.Text = "Key: "..keyStr; tpListening = false end end)
 Mouse.Button1Down:Connect(function() if ctrlTpEnabled and UserInputService:IsKeyDown(clickTpKey) and Mouse.Hit then SmartTeleport(CFrame.new(Mouse.Hit.Position)) end end)
 
+-- 10. TP Player (FIXED UI)
 local r10 = createRow(140, 14, GenPageScroll)
 local TpLbl = Instance.new("TextLabel", r10); TpLbl.Text="Teleport to Player"; TpLbl.Size=UDim2.new(1,0,0,20); TpLbl.BackgroundTransparency=1; TpLbl.TextColor3=Color3.new(1,1,1); TpLbl.Font=Enum.Font.GothamBold; TpLbl.Position=UDim2.new(0,0,0,5)
-local TpSearch = Instance.new("TextBox", r10); TpSearch.Size=UDim2.new(0.9,0,0,25); TpSearch.Position=UDim2.new(0.05,0,0,30); TpSearch.PlaceholderText="Search Player..."; TpSearch.BackgroundColor3=Color3.fromRGB(30,30,30); TpSearch.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", TpSearch).CornerRadius = UDim.new(0,4)
+local TpSearch = Instance.new("TextBox", r10); TpSearch.Size=UDim2.new(0.8,0,0,25); TpSearch.Position=UDim2.new(0.05,0,0,30); TpSearch.PlaceholderText="Search Player..."; TpSearch.BackgroundColor3=Color3.fromRGB(30,30,30); TpSearch.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", TpSearch).CornerRadius = UDim.new(0,4)
 local TpScroll = Instance.new("ScrollingFrame", r10); TpScroll.Size = UDim2.new(0.9, 0, 0, 70); TpScroll.Position = UDim2.new(0.05, 0, 0, 60); TpScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20); TpScroll.CanvasSize = UDim2.new(0,0,0,0); TpScroll.ScrollBarThickness = 2
 local TpList = Instance.new("UIListLayout", TpScroll); TpList.Padding=UDim.new(0,2)
-local RefreshTp = Instance.new("ImageButton", r10); RefreshTp.Size = UDim2.new(0,18,0,18); RefreshTp.Position=UDim2.new(1,-25,0,33); RefreshTp.BackgroundColor3=Color3.fromRGB(0,80,200); RefreshTp.Image="rbxassetid://6031097225"; RefreshTp.ZIndex = 2
+local RefreshTp = Instance.new("ImageButton", r10); RefreshTp.Size = UDim2.new(0,25,0,25); RefreshTp.Position=UDim2.new(0.88,0,0,30); RefreshTp.BackgroundColor3=Color3.fromRGB(0,80,200); RefreshTp.Image="rbxassetid://6031097225"; RefreshTp.ZIndex = 2; Instance.new("UICorner", RefreshTp).CornerRadius=UDim.new(0,4)
 local function RefreshPlayerList(filter)
 	for _,v in pairs(TpScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
 	for _,p in pairs(Players:GetPlayers()) do
@@ -321,7 +345,7 @@ local function RefreshPlayerList(filter)
 end
 RefreshTp.MouseButton1Click:Connect(function() RefreshPlayerList(TpSearch.Text) end); TpSearch.Changed:Connect(function(prop) if prop == "Text" then RefreshPlayerList(TpSearch.Text) end end); RefreshPlayerList("")
 
-local r11 = createRow(250, 15, GenPageScroll) -- Waypoints Box
+local r11 = createRow(250, 15, GenPageScroll) 
 local WpLbl = Instance.new("TextLabel", r11); WpLbl.Text="Waypoints System"; WpLbl.Size=UDim2.new(1,0,0,20); WpLbl.BackgroundTransparency=1; WpLbl.TextColor3=Color3.new(1,1,1); WpLbl.Font=Enum.Font.GothamBold; WpLbl.Position=UDim2.new(0,0,0,5)
 local WpBox = Instance.new("TextBox", r11); WpBox.Size=UDim2.new(0.6,0,0,25); WpBox.Position=UDim2.new(0.05,0,0,30); WpBox.PlaceholderText="Name..."; WpBox.BackgroundColor3=Color3.fromRGB(30,30,30); WpBox.TextColor3=Color3.new(1,1,1)
 local AddWp = Instance.new("TextButton", r11); AddWp.Size=UDim2.new(0.25,0,0,25); AddWp.Position=UDim2.new(0.7,0,0,30); AddWp.Text="Add"; AddWp.BackgroundColor3=Color3.fromRGB(0,80,200); AddWp.TextColor3=Color3.new(1,1,1)
@@ -382,18 +406,18 @@ local BriDot = Instance.new("TextButton", BriSlider); BriDot.Size = UDim2.new(0,
 local isMaxBri = false; local origLighting = {Brightness = Lighting.Brightness, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient, GlobalShadows = Lighting.GlobalShadows, ClockTime = Lighting.ClockTime}
 local function UpdateBri(val) local b = math.clamp(val, 0, 10); Lighting.Brightness = b; local percent = b / 10; BriFill.Size = UDim2.new(percent, 0, 1, 0); BriDot.Position = UDim2.new(percent, -6, 0.5, -6) end
 local briDrag2 = false; BriDot.MouseButton1Down:Connect(function() briDrag2 = true end)
-MaxBtn.MouseButton1Click:Connect(function() isMaxBri = not isMaxBri; MaxBtn.Text = "Max: "..(isMaxBri and "ON" or "OFF"); MaxBtn.BackgroundColor3 = isMaxBri and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40); Notify("Visual", "True Fullbright "..(isMaxBri and "ON" or "OFF"), 2); if isMaxBri then origLighting.Brightness = Lighting.Brightness; origLighting.Ambient = Lighting.Ambient; origLighting.OutdoorAmbient = Lighting.OutdoorAmbient; origLighting.GlobalShadows = Lighting.GlobalShadows; origLighting.ClockTime = Lighting.ClockTime else Lighting.Brightness = origLighting.Brightness; Lighting.Ambient = origLighting.Ambient; Lighting.OutdoorAmbient = origLighting.OutdoorAmbient; Lighting.GlobalShadows = origLighting.GlobalShadows; Lighting.ClockTime = origLighting.ClockTime end end)
+MaxBtn.MouseButton1Click:Connect(function() isMaxBri = not isMaxBri; MaxBtn.Text = "Max: "..(isMaxBri and "ON" or "OFF"); MaxBtn.BackgroundColor3 = isMaxBri and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40); Notify("Visual", "True Fullbright "..(isMaxBri and "ON" or "OFF"), 2); if isMaxBri then origLighting.Brightness = Lighting.Brightness; origLighting.Ambient = Lighting.Ambient; origLighting.OutdoorAmbient = Lighting.OutdoorAmbient; origLighting.GlobalShadows = Lighting.GlobalShadows; origLighting.ClockTime = Lighting.ClockTime else Lighting.Brightness = origLighting.Brightness; Lighting.Ambient = origLighting.Ambient; Lighting.OutdoorAmbient = origLighting.OutdoorAmbient; Lighting.GlobalShadows = Lighting.GlobalShadows; Lighting.ClockTime = origLighting.ClockTime end end)
 
 local KeyFrame = createRow(40, 7, SetPageScroll)
 local KeyLbl = Instance.new("TextLabel", KeyFrame); KeyLbl.Text="Menu Toggle Key:"; KeyLbl.Size=UDim2.new(0.5,0,1,0); KeyLbl.Position=UDim2.new(0,10,0,0); KeyLbl.BackgroundTransparency=1; KeyLbl.TextColor3=Color3.new(1,1,1); KeyLbl.TextXAlignment=Enum.TextXAlignment.Left; KeyLbl.Font=Enum.Font.Gotham
 local KeyBtn = Instance.new("TextButton", KeyFrame); KeyBtn.Size=UDim2.new(0.4,0,0,30); KeyBtn.Position=UDim2.new(0.55,0,0,5); KeyBtn.BackgroundColor3=Color3.fromRGB(30,30,30); KeyBtn.Text="RightControl"; KeyBtn.TextColor3=Color3.new(0,1,1); KeyBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", KeyBtn).CornerRadius=UDim.new(0,6)
 local listening = false; KeyBtn.MouseButton1Click:Connect(function() listening=true; KeyBtn.Text="Press any key..."; KeyBtn.TextColor3=Color3.new(1,1,0) end)
-UserInputService.InputBegan:Connect(function(input) if listening and input.UserInputType==Enum.UserInputType.Keyboard then toggleKey = input.KeyCode; KeyBtn.Text=tostring(toggleKey):gsub("Enum.KeyCode.",""); KeyBtn.TextColor3=Color3.new(0,1,1); listening=false elseif input.KeyCode==toggleKey and not listening then ScreenGui.Enabled=not ScreenGui.Enabled end end)
+UserInputService.InputBegan:Connect(function(input) if listening and input.UserInputType==Enum.UserInputType.Keyboard then toggleKey = input.KeyCode; KeyBtn.Text=tostring(toggleKey):gsub("Enum.KeyCode.",""); KeyBtn.TextColor3=Color3.new(0,1,1); listening=false elseif input.KeyCode==toggleKey and not listening then MainFrame.Visible = not MainFrame.Visible end end)
 
 local JobFrame = createRow(70, 8, SetPageScroll)
 local JobBox = Instance.new("TextBox", JobFrame); JobBox.Size=UDim2.new(1,0,0,30); JobBox.BackgroundColor3=Color3.fromRGB(20,20,20); JobBox.TextColor3=Color3.new(0,1,1); JobBox.PlaceholderText="Paste Job ID to Join..."; JobBox.Text=""; Instance.new("UICorner", JobBox).CornerRadius=UDim.new(0,6); Instance.new("UIStroke", JobBox).Color=Color3.fromRGB(0,80,200)
 local JoinBtn = Instance.new("TextButton", JobFrame); JoinBtn.Size=UDim2.new(1,0,0,30); JoinBtn.Position=UDim2.new(0,0,0,35); JoinBtn.BackgroundColor3=Color3.fromRGB(0,150,0); JoinBtn.Text="Join This Job ID"; JoinBtn.TextColor3=Color3.new(1,1,1); JoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", JoinBtn).CornerRadius=UDim.new(0,6)
-JoinBtn.MouseButton1Click:Connect(function() if JobBox.Text ~= "" then JoinBtn.Text="Joining..."; Notify("System", "Joining Server...", 3); TeleportService:TeleportToPlaceInstance(game.PlaceId, JobBox.Text, LocalPlayer) else JoinBtn.Text="Please enter ID!"; wait(1); JoinBtn.Text="Join This Job ID" end end)
+JoinBtn.MouseButton1Click:Connect(function() if JobBox.Text ~= "" then JoinBtn.Text="Joining..."; TeleportService:TeleportToPlaceInstance(game.PlaceId, JobBox.Text, LocalPlayer) else JoinBtn.Text="Please enter ID!"; wait(1); JoinBtn.Text="Join This Job ID" end end)
 
 local RejoinBtn = Instance.new("TextButton", SetPageScroll); RejoinBtn.LayoutOrder = 9; RejoinBtn.Size=UDim2.new(1,0,0,30); RejoinBtn.BackgroundColor3=Color3.fromRGB(200,50,50); RejoinBtn.Text="Rejoin Current Server"; RejoinBtn.TextColor3=Color3.new(1,1,1); RejoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", RejoinBtn).CornerRadius=UDim.new(0,6)
 RejoinBtn.MouseButton1Click:Connect(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end)
