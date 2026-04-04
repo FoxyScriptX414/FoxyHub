@@ -26,7 +26,7 @@ clearOldHubs()
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FoxyHub_Ultimate_v8"
+ScreenGui.Name = "FoxyHub_Ultimate_v11"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -72,7 +72,8 @@ local aimlockKey = Enum.KeyCode.G; local aimlockTarget = nil; local isAiming = f
 local shiftLockSystemEnabled = false; local isShiftLocked = false
 local espDangerDist = 50; local espTextSize = 14
 
-_G.UpdateWpUI = function() end -- Forward Declaration for Config Loading
+_G.UpdateWpUI = function() end 
+_G.SyncTogglesFromConfig = function() end 
 
 -- 1. Main Frame
 local MainFrame = Instance.new("Frame", ScreenGui); MainFrame.Name = "MainFrame"; MainFrame.Size = UDim2.new(0, 500, 0, 580); MainFrame.Position = UDim2.new(0.5, -250, 0.5, -290); MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 10); MainFrame.BorderSizePixel = 0; MainFrame.ClipsDescendants = true
@@ -81,7 +82,7 @@ Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
 -- *** TOGGLE ICON (Fx) ***
 local ToggleIcon = Instance.new("TextButton", ScreenGui)
-ToggleIcon.Name = "FoxyToggleIcon"; ToggleIcon.Size = UDim2.new(0, 45, 0, 45); ToggleIcon.Position = UDim2.new(0, 15, 0, 15); ToggleIcon.BackgroundColor3 = Color3.fromRGB(15, 15, 15); ToggleIcon.Text = "Fx"; ToggleIcon.TextColor3 = Color3.fromRGB(0, 200, 255); ToggleIcon.Font = Enum.Font.GothamBlack; ToggleIcon.TextSize = 22
+ToggleIcon.Name = "FoxyToggleIcon"; ToggleIcon.Size = UDim2.new(0, 45, 0, 45); ToggleIcon.Position = UDim2.new(0.5, -305, 0.5, -290); ToggleIcon.BackgroundColor3 = Color3.fromRGB(15, 15, 15); ToggleIcon.Text = "Fx"; ToggleIcon.TextColor3 = Color3.fromRGB(0, 200, 255); ToggleIcon.Font = Enum.Font.GothamBlack; ToggleIcon.TextSize = 22
 Instance.new("UICorner", ToggleIcon).CornerRadius = UDim.new(0, 12)
 local iconStroke = Instance.new("UIStroke", ToggleIcon); iconStroke.Color = Color3.fromRGB(0, 100, 255); iconStroke.Thickness = 2
 
@@ -153,14 +154,8 @@ end
 InfoBtn.MouseButton1Click:Connect(function() SwitchTab("Info") end); GenBtn.MouseButton1Click:Connect(function() SwitchTab("General") end); SetBtn.MouseButton1Click:Connect(function() SwitchTab("Setting") end); SwitchTab("Info")
 
 -- ================= INFO & CONFIG CONTENT ================= --
--- ดึงชื่อ Map
 local mapName = game.Name
-task.spawn(function()
-	pcall(function()
-		local info = MarketplaceService:GetProductInfo(game.PlaceId)
-		if info and info.Name then mapName = info.Name end
-	end)
-end)
+task.spawn(function() pcall(function() local info = MarketplaceService:GetProductInfo(game.PlaceId); if info and info.Name then mapName = info.Name end end) end)
 
 local InfoBox = Instance.new("Frame", InfoPage); InfoBox.Size = UDim2.new(1, 0, 0, 180); InfoBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UIStroke", InfoBox).Color = Color3.fromRGB(0, 100, 255); Instance.new("UICorner", InfoBox).CornerRadius = UDim.new(0, 8)
 local AvatarImg = Instance.new("ImageLabel", InfoBox); AvatarImg.Size = UDim2.new(0, 80, 0, 80); AvatarImg.Position = UDim2.new(0, 10, 0, 10); AvatarImg.BackgroundColor3 = Color3.fromRGB(30, 30, 30); Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0); AvatarImg.Image = "rbxthumb://type=AvatarHeadShot&id=" .. LocalPlayer.UserId .. "&w=150&h=150"
@@ -170,10 +165,8 @@ local startTime = tick()
 local function formatTime(seconds) local h = math.floor(seconds / 3600); local m = math.floor((seconds % 3600) / 60); local s = seconds % 60; return string.format("%02d:%02d:%02d", h, m, s) end
 RunService.RenderStepped:Connect(function() if InfoPage.Visible then InfoText.Text = string.format("\nUser: %s\nDisplay: %s\n\nPlayers: %d/%d\nFPS: %d\nTime: %s\nMap: %s", LocalPlayer.Name, LocalPlayer.DisplayName, #Players:GetPlayers(), Players.MaxPlayers, math.floor(workspace:GetRealPhysicsFPS()), formatTime(math.floor(tick() - startTime)), mapName) end end)
 
--- Config System (Save/Load)
 local ConfigFrame = Instance.new("Frame", InfoPage); ConfigFrame.Size = UDim2.new(1,0,0,40); ConfigFrame.BackgroundTransparency=1
 local SaveBtn = Instance.new("TextButton", ConfigFrame); SaveBtn.Size = UDim2.new(0.48,0,1,0); SaveBtn.BackgroundColor3=Color3.fromRGB(0, 150, 100); SaveBtn.Text="Save Config"; SaveBtn.TextColor3=Color3.new(1,1,1); SaveBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", SaveBtn).CornerRadius=UDim.new(0,6)
--- เปลี่ยนปุ่ม Load เป็นสีฟ้า
 local LoadBtn = Instance.new("TextButton", ConfigFrame); LoadBtn.Size = UDim2.new(0.48,0,1,0); LoadBtn.Position = UDim2.new(0.52,0,0,0); LoadBtn.BackgroundColor3=Color3.fromRGB(0, 100, 255); LoadBtn.Text="Load Config"; LoadBtn.TextColor3=Color3.new(1,1,1); LoadBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", LoadBtn).CornerRadius=UDim.new(0,6)
 
 local cfgName = "FoxyHub_Config.json"
@@ -182,10 +175,14 @@ local function UpdateUI_FromConfig()
 end
 
 SaveBtn.MouseButton1Click:Connect(function()
-	local savedWps = {}
-	for name, cf in pairs(waypoints) do savedWps[name] = {cf:GetComponents()} end
-	local cfg = { fly = flySpeed, spd = targetSpeed, jmp = targetJump, eDist = espDangerDist, eSize = espTextSize, tKey = toggleKey.Name, aKey = aimlockKey.Name, cKey = clickTpKey.Name, wps = savedWps }
-	pcall(function() writefile(cfgName, HttpService:JSONEncode(cfg)); Notify("Config System", "Settings & Waypoints Saved!", 3) end)
+	local savedWps = {}; for name, cf in pairs(waypoints) do savedWps[name] = {cf:GetComponents()} end
+	local cfg = { 
+		fly = flySpeed, spd = targetSpeed, jmp = targetJump, eDist = espDangerDist, eSize = espTextSize, 
+		tKey = toggleKey.Name, aKey = aimlockKey.Name, cKey = clickTpKey.Name, wps = savedWps,
+		-- Save States
+		infJ = isInfJump, jmpE = isJumpEnabled, spdE = isSpeedEnabled, espE = espEnabled, ctrlTp = ctrlTpEnabled
+	}
+	pcall(function() writefile(cfgName, HttpService:JSONEncode(cfg)); Notify("Config System", "Settings, States & Waypoints Saved!", 3) end)
 end)
 LoadBtn.MouseButton1Click:Connect(function()
 	pcall(function()
@@ -193,12 +190,14 @@ LoadBtn.MouseButton1Click:Connect(function()
 			local data = HttpService:JSONDecode(readfile(cfgName))
 			flySpeed = data.fly or 50; targetSpeed = data.spd or 16; targetJump = data.jmp or 50; espDangerDist = data.eDist or 50; espTextSize = data.eSize or 14
 			toggleKey = Enum.KeyCode[data.tKey or "RightControl"]; aimlockKey = Enum.KeyCode[data.aKey or "G"]; clickTpKey = Enum.KeyCode[data.cKey or "LeftControl"]
-			if data.wps then
-				waypoints = {}
-				for name, comps in pairs(data.wps) do waypoints[name] = CFrame.new(unpack(comps)) end
-				pcall(function() _G.UpdateWpUI() end)
-			end
-			UpdateUI_FromConfig(); Notify("Config System", "Settings Loaded Successfully!", 3)
+			
+			-- Load States
+			isInfJump = data.infJ or false; isJumpEnabled = data.jmpE or false; isSpeedEnabled = data.spdE or false; espEnabled = data.espE or false; ctrlTpEnabled = data.ctrlTp or false
+			
+			if data.wps then waypoints = {}; for name, comps in pairs(data.wps) do waypoints[name] = CFrame.new(unpack(comps)) end; pcall(function() _G.UpdateWpUI() end) end
+			UpdateUI_FromConfig()
+			pcall(function() _G.SyncTogglesFromConfig() end) -- Sync Visual UI
+			Notify("Config System", "Settings Loaded Successfully!", 3)
 		else Notify("Config System", "No Config File Found!", 3) end
 	end)
 end)
@@ -211,13 +210,24 @@ local function createRow(height, order, parent)
 	local row = Instance.new("Frame", parent); row.LayoutOrder = order; row.Size = UDim2.new(1, 0, 0, height or 30); row.BackgroundColor3 = Color3.fromRGB(15, 15, 15); Instance.new("UIStroke", row).Color = Color3.fromRGB(0, 80, 200); Instance.new("UICorner", row).CornerRadius = UDim.new(0, 4); return row
 end
 
--- HELPER: Smart TP
 local function SmartTeleport(targetCFrame)
 	local char = LocalPlayer.Character; if not char then return end
 	local hum = char:FindFirstChild("Humanoid"); local root = char:FindFirstChild("HumanoidRootPart")
 	if hum and hum.SeatPart then
 		local vehicle = hum.SeatPart.Parent; if vehicle:IsA("Model") and vehicle.PrimaryPart then vehicle:SetPrimaryPartCFrame(targetCFrame + Vector3.new(0, 3, 0)) elseif hum.SeatPart:IsA("BasePart") then hum.SeatPart.CFrame = targetCFrame + Vector3.new(0, 3, 0) end
 	elseif root then root.CFrame = targetCFrame + Vector3.new(0, 3, 0) end
+end
+
+local function ClearESP() for _, p in pairs(Players:GetPlayers()) do if p.Character and p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("ESP_Tag") then p.Character.Head.ESP_Tag:Destroy() end end end
+local function AddEsp(p) 
+	if not espEnabled or p == LocalPlayer then return end
+	local function app(c) 
+		if not espEnabled then return end; local h = c:WaitForChild("Head", 5); if not h or h:FindFirstChild("ESP_Tag") then return end
+		local b = Instance.new("BillboardGui", h); b.Name="ESP_Tag"; b.Size=UDim2.new(0,250,0,50); b.StudsOffset=Vector3.new(0,3,0); b.AlwaysOnTop=true
+		local nameLbl = Instance.new("TextLabel", b); nameLbl.Name = "NameLbl"; nameLbl.Size=UDim2.new(1,0,0.5,0); nameLbl.BackgroundTransparency=1; nameLbl.Text=p.Name; nameLbl.TextColor3=Color3.fromRGB(150,150,150); nameLbl.TextStrokeTransparency=0; nameLbl.Font = Enum.Font.GothamBold; nameLbl.TextSize = espTextSize
+		local statsLbl = Instance.new("TextLabel", b); statsLbl.Name = "StatsLbl"; statsLbl.Size=UDim2.new(1,0,0.5,0); statsLbl.Position=UDim2.new(0,0,0.5,0); statsLbl.BackgroundTransparency=1; statsLbl.TextColor3=Color3.new(0,1,0); statsLbl.TextStrokeTransparency=0; statsLbl.Font = Enum.Font.GothamBold; statsLbl.TextSize = espTextSize; statsLbl.Text = "HP: 100 | Dist: 0m"
+	end
+	if p.Character then app(p.Character) end; p.CharacterAdded:Connect(app) 
 end
 
 --- 🏃‍♂️ MOVEMENT ---
@@ -248,9 +258,7 @@ local FlySlider = Instance.new("Frame", r4); FlySlider.Size = UDim2.new(0.9, 0, 
 _G.UpdateFly = function(val) flySpeed = math.clamp(val, 0, 500); FlyBox.Text = tostring(math.floor(flySpeed)); FlyFill.Size = UDim2.new(flySpeed/500, 0, 1, 0); FlyDot.Position = UDim2.new(flySpeed/500, -6, 0.5, -6) end
 local flyDrag = false; FlyDot.MouseButton1Down:Connect(function() flyDrag = true end); FlyBox.FocusLost:Connect(function() _G.UpdateFly(tonumber(FlyBox.Text) or 50) end)
 FlyBtn.MouseButton1Click:Connect(function()
-	isFlying = not isFlying
-	FlyBtn.Text = "Fly: "..(isFlying and "ON" or "OFF")
-	FlyBtn.TextColor3 = isFlying and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Movement", "Fly "..(isFlying and "Enabled" or "Disabled"), 2)
+	isFlying = not isFlying; FlyBtn.Text = "Fly: "..(isFlying and "ON" or "OFF"); FlyBtn.TextColor3 = isFlying and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Movement", "Fly "..(isFlying and "Enabled" or "Disabled"), 2)
 	if isFlying then
 		task.spawn(function()
 			local HRP = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -278,16 +286,16 @@ local SpdBox = Instance.new("TextBox", r5); SpdBox.Size = UDim2.new(0.2, 0, 0, 2
 local SpdSlider = Instance.new("Frame", r5); SpdSlider.Size = UDim2.new(0.9, 0, 0, 4); SpdSlider.Position = UDim2.new(0.05, 0, 0, 40); SpdSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local SpdFill = Instance.new("Frame", SpdSlider); SpdFill.Size = UDim2.new(16/500, 0, 1, 0); SpdFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local SpdDot = Instance.new("TextButton", SpdSlider); SpdDot.Size = UDim2.new(0, 12, 0, 12); SpdDot.Position = UDim2.new(16/500, -6, 0.5, -6); SpdDot.Text = ""; SpdDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", SpdDot).CornerRadius = UDim.new(1, 0)
 _G.UpdateSpd = function(val) targetSpeed = math.clamp(val, 0, 500); SpdBox.Text = tostring(math.floor(targetSpeed)); SpdFill.Size = UDim2.new(targetSpeed/500, 0, 1, 0); SpdDot.Position = UDim2.new(targetSpeed/500, -6, 0.5, -6) end
 local spdDrag = false; SpdDot.MouseButton1Down:Connect(function() spdDrag = true end); SpdBox.FocusLost:Connect(function() _G.UpdateSpd(tonumber(SpdBox.Text) or 16) end)
-SpdBtn.MouseButton1Click:Connect(function() isSpeedEnabled = not isSpeedEnabled; SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF"); SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8); if not isSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 16 end; Notify("Movement", "Custom Speed "..(isSpeedEnabled and "Enabled" or "Disabled"), 2) end)
+SpdBtn.MouseButton1Click:Connect(function() isSpeedEnabled = not isSpeedEnabled; SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF"); SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8); if not isSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 16 end; Notify("Movement", "CF WalkSpeed "..(isSpeedEnabled and "Enabled" or "Disabled"), 2) end)
 
 local r8 = createRow(30, 7, GenPageScroll)
 local FreezeBtn = Instance.new("TextButton", r8); FreezeBtn.Size = UDim2.new(1,0,1,0); FreezeBtn.BackgroundTransparency=1; FreezeBtn.Text="Freeze Character: OFF"; FreezeBtn.TextColor3=Color3.fromRGB(200,200,200); FreezeBtn.Font=Enum.Font.Gotham
 FreezeBtn.MouseButton1Click:Connect(function() isFrozen = not isFrozen; FreezeBtn.Text = "Freeze Character: "..(isFrozen and "ON" or "OFF"); FreezeBtn.TextColor3 = isFrozen and Color3.new(0,1,1) or Color3.new(0.8,0.8,0.8); if not isFrozen and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then LocalPlayer.Character.HumanoidRootPart.Anchored = false end; Notify("Movement", "Freeze "..(isFrozen and "Enabled" or "Disabled"), 2) end)
 
---- 👁️ VISUAL & COMBAT ---
-createHeader("--- 👁️ Visual & Combat ---", 8, GenPageScroll)
+--- 👁️ VISUAL ---
+createHeader("--- 👁️ Visual ---", 10, GenPageScroll)
 
-local r6 = createRow(90, 9, GenPageScroll)
+local r6 = createRow(90, 11, GenPageScroll)
 local EspBtn = Instance.new("TextButton", r6); EspBtn.Size = UDim2.new(0.4,0,0,25); EspBtn.Position=UDim2.new(0.05,0,0,5); EspBtn.BackgroundTransparency=1; EspBtn.Text="ESP Players: OFF"; EspBtn.TextColor3=Color3.fromRGB(200,200,200); EspBtn.Font=Enum.Font.Gotham; EspBtn.TextXAlignment = Enum.TextXAlignment.Left
 local DangerLbl = Instance.new("TextLabel", r6); DangerLbl.Size=UDim2.new(0.3,0,0,25); DangerLbl.Position=UDim2.new(0.5,0,0,5); DangerLbl.BackgroundTransparency=1; DangerLbl.Text="Danger Dist:"; DangerLbl.TextColor3=Color3.new(1,1,1); DangerLbl.Font=Enum.Font.Gotham; DangerLbl.TextXAlignment = Enum.TextXAlignment.Right
 local DangerBox = Instance.new("TextBox", r6); DangerBox.Size=UDim2.new(0.15,0,0,20); DangerBox.Position=UDim2.new(0.82,0,0,7.5); DangerBox.BackgroundColor3=Color3.fromRGB(30,30,30); DangerBox.TextColor3=Color3.new(1,1,1); DangerBox.Text="50"; Instance.new("UICorner", DangerBox).CornerRadius=UDim.new(0,4)
@@ -297,28 +305,75 @@ DangerBox.FocusLost:Connect(function() espDangerDist = tonumber(DangerBox.Text) 
 local espDrag = false; EspDot.MouseButton1Down:Connect(function() espDrag = true end)
 _G.UpdateEspSize = function(val) espTextSize = math.clamp(math.floor(val), 8, 32); EspSizeLbl.Text = "Text Size: " .. espTextSize; local percent = (espTextSize - 8) / (32 - 8); EspFill.Size = UDim2.new(percent, 0, 1, 0); EspDot.Position = UDim2.new(percent, -6, 0.5, -6) end
 
-local function ClearESP() for _, p in pairs(Players:GetPlayers()) do if p.Character and p.Character:FindFirstChild("Head") and p.Character.Head:FindFirstChild("ESP_Tag") then p.Character.Head.ESP_Tag:Destroy() end end end
-local function AddEsp(p) 
-	if not espEnabled or p == LocalPlayer then return end
-	local function app(c) 
-		if not espEnabled then return end; local h = c:WaitForChild("Head", 5); if not h or h:FindFirstChild("ESP_Tag") then return end
-		local b = Instance.new("BillboardGui", h); b.Name="ESP_Tag"; b.Size=UDim2.new(0,250,0,50); b.StudsOffset=Vector3.new(0,3,0); b.AlwaysOnTop=true
-		local nameLbl = Instance.new("TextLabel", b); nameLbl.Name = "NameLbl"; nameLbl.Size=UDim2.new(1,0,0.5,0); nameLbl.BackgroundTransparency=1; nameLbl.Text=p.Name; nameLbl.TextColor3=Color3.fromRGB(150,150,150); nameLbl.TextStrokeTransparency=0; nameLbl.Font = Enum.Font.GothamBold; nameLbl.TextSize = espTextSize
-		local statsLbl = Instance.new("TextLabel", b); statsLbl.Name = "StatsLbl"; statsLbl.Size=UDim2.new(1,0,0.5,0); statsLbl.Position=UDim2.new(0,0,0.5,0); statsLbl.BackgroundTransparency=1; statsLbl.TextColor3=Color3.new(0,1,0); statsLbl.TextStrokeTransparency=0; statsLbl.Font = Enum.Font.GothamBold; statsLbl.TextSize = espTextSize; statsLbl.Text = "HP: 100 | Dist: 0m"
-	end
-	if p.Character then app(p.Character) end; p.CharacterAdded:Connect(app) 
-end
 EspBtn.MouseButton1Click:Connect(function() espEnabled = not espEnabled; EspBtn.Text = "ESP Players: "..(espEnabled and "ON" or "OFF"); EspBtn.TextColor3 = espEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Visual", "ESP "..(espEnabled and "Enabled" or "Disabled"), 2); if espEnabled then for _,p in pairs(Players:GetPlayers()) do AddEsp(p) end else ClearESP() end end); Players.PlayerAdded:Connect(AddEsp)
 
-local r7_spec = createRow(35, 10, GenPageScroll)
+local r7_spec = createRow(35, 12, GenPageScroll)
 local SpecBox = Instance.new("TextBox", r7_spec); SpecBox.Size = UDim2.new(0.4, 0, 0, 25); SpecBox.Position = UDim2.new(0.02, 0, 0.1, 0); SpecBox.PlaceholderText = "Player Name..."; SpecBox.Text = ""; SpecBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30); SpecBox.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", SpecBox).CornerRadius = UDim.new(0, 4)
 local ViewBtn = Instance.new("TextButton", r7_spec); ViewBtn.Size = UDim2.new(0.25, 0, 0, 25); ViewBtn.Position = UDim2.new(0.45, 0, 0.1, 0); ViewBtn.Text = "View"; ViewBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200); ViewBtn.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", ViewBtn).CornerRadius = UDim.new(0, 4)
 local StopBtn = Instance.new("TextButton", r7_spec); StopBtn.Size = UDim2.new(0.25, 0, 0, 25); StopBtn.Position = UDim2.new(0.73, 0, 0.1, 0); StopBtn.Text = "Stop"; StopBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50); StopBtn.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", StopBtn).CornerRadius = UDim.new(0, 4)
 ViewBtn.MouseButton1Click:Connect(function() local targetName = string.lower(SpecBox.Text); for _, p in pairs(Players:GetPlayers()) do if string.sub(string.lower(p.Name), 1, #targetName) == targetName or string.sub(string.lower(p.DisplayName), 1, #targetName) == targetName then if p.Character and p.Character:FindFirstChild("Humanoid") then Camera.CameraSubject = p.Character.Humanoid; SpecBox.Text = p.Name; Notify("Spectate", "Viewing: "..p.Name, 2); break end end end end)
 StopBtn.MouseButton1Click:Connect(function() if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then Camera.CameraSubject = LocalPlayer.Character.Humanoid; Notify("Spectate", "Stopped viewing.", 2) end end)
 
-local r12 = createRow(160, 11, GenPageScroll)
+--- 📍 TELEPORT ---
+createHeader("--- 📍 Teleport ---", 20, GenPageScroll)
+
+local r9 = createRow(30, 21, GenPageScroll)
+local CtrlTpBtn = Instance.new("TextButton", r9); CtrlTpBtn.Size = UDim2.new(0.6,0,1,0); CtrlTpBtn.BackgroundTransparency=1; CtrlTpBtn.Text="Click TP: OFF"; CtrlTpBtn.TextColor3=Color3.fromRGB(200,200,200); CtrlTpBtn.Font=Enum.Font.Gotham; CtrlTpBtn.TextXAlignment = Enum.TextXAlignment.Left; CtrlTpBtn.Position = UDim2.new(0, 10, 0, 0)
+local CtrlTpKeyBtn = Instance.new("TextButton", r9); CtrlTpKeyBtn.Size = UDim2.new(0.3, 0, 0, 25); CtrlTpKeyBtn.Position = UDim2.new(0.65, 0, 0, 2.5); CtrlTpKeyBtn.Text = "Key: LCtrl"; CtrlTpKeyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); CtrlTpKeyBtn.TextColor3 = Color3.new(0,1,1); Instance.new("UICorner", CtrlTpKeyBtn).CornerRadius = UDim.new(0,6)
+CtrlTpBtn.MouseButton1Click:Connect(function() ctrlTpEnabled = not ctrlTpEnabled; CtrlTpBtn.Text = "Click TP: "..(ctrlTpEnabled and "ON" or "OFF"); CtrlTpBtn.TextColor3 = ctrlTpEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Teleport", "Click TP "..(ctrlTpEnabled and "Enabled" or "Disabled"), 2) end)
+local tpListening = false; CtrlTpKeyBtn.MouseButton1Click:Connect(function() tpListening = true; CtrlTpKeyBtn.Text = "..." end)
+UserInputService.InputBegan:Connect(function(input) if tpListening and input.UserInputType == Enum.UserInputType.Keyboard then clickTpKey = input.KeyCode; local keyStr = tostring(clickTpKey):gsub("Enum.KeyCode.", ""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; if keyStr == "RightControl" then keyStr = "RCtrl" end; CtrlTpKeyBtn.Text = "Key: "..keyStr; tpListening = false end end)
+Mouse.Button1Down:Connect(function() if ctrlTpEnabled and UserInputService:IsKeyDown(clickTpKey) and Mouse.Hit then SmartTeleport(CFrame.new(Mouse.Hit.Position)) end end)
+
+local r10 = createRow(140, 22, GenPageScroll)
+local TpLbl = Instance.new("TextLabel", r10); TpLbl.Text="Teleport to Player"; TpLbl.Size=UDim2.new(1,0,0,20); TpLbl.BackgroundTransparency=1; TpLbl.TextColor3=Color3.new(1,1,1); TpLbl.Font=Enum.Font.GothamBold; TpLbl.Position=UDim2.new(0,0,0,5)
+local TpSearch = Instance.new("TextBox", r10); TpSearch.Size=UDim2.new(0.8,0,0,25); TpSearch.Position=UDim2.new(0.05,0,0,30); TpSearch.PlaceholderText="Player Name..."; TpSearch.Text=""; TpSearch.BackgroundColor3=Color3.fromRGB(30,30,30); TpSearch.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", TpSearch).CornerRadius = UDim.new(0,6)
+local RefreshTp = Instance.new("ImageButton", r10); RefreshTp.Size = UDim2.new(0,25,0,25); RefreshTp.Position=UDim2.new(0.88,0,0,30); RefreshTp.BackgroundColor3=Color3.fromRGB(0,80,200); RefreshTp.Image="rbxassetid://6031097225"; RefreshTp.ZIndex = 2; Instance.new("UICorner", RefreshTp).CornerRadius = UDim.new(0,6)
+local TpScroll = Instance.new("ScrollingFrame", r10); TpScroll.Size = UDim2.new(0.9, 0, 0, 70); TpScroll.Position = UDim2.new(0.05, 0, 0, 60); TpScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20); TpScroll.CanvasSize = UDim2.new(0,0,0,0); TpScroll.ScrollBarThickness = 2
+local TpList = Instance.new("UIListLayout", TpScroll); TpList.Padding=UDim.new(0,2)
+
+local function RefreshPlayerList(filter)
+	for _,v in pairs(TpScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+	for _,p in pairs(Players:GetPlayers()) do
+		if p~=LocalPlayer then
+			local show = true; if filter and filter ~= "" then if not (string.find(string.lower(p.Name), string.lower(filter)) or string.find(string.lower(p.DisplayName), string.lower(filter))) then show = false end end
+			if show then
+				local b = Instance.new("TextButton", TpScroll); b.Size=UDim2.new(1,0,0,25); b.Text = p.DisplayName .. " (@" .. p.Name .. ")"; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.Font=Enum.Font.Gotham; b.TextSize=12
+				b.MouseButton1Click:Connect(function() if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then SmartTeleport(p.Character.HumanoidRootPart.CFrame); Notify("Teleport", "Teleported to "..p.Name, 2) end end)
+			end
+		end
+	end
+	TpScroll.CanvasSize = UDim2.new(0,0,0,TpList.AbsoluteContentSize.Y)
+end
+RefreshTp.MouseButton1Click:Connect(function() RefreshPlayerList(TpSearch.Text) end); TpSearch.Changed:Connect(function(prop) if prop == "Text" then RefreshPlayerList(TpSearch.Text) end end); RefreshPlayerList("")
+
+local r11 = createRow(250, 23, GenPageScroll) 
+local WpLbl = Instance.new("TextLabel", r11); WpLbl.Text="Waypoints System"; WpLbl.Size=UDim2.new(1,0,0,20); WpLbl.BackgroundTransparency=1; WpLbl.TextColor3=Color3.new(1,1,1); WpLbl.Font=Enum.Font.GothamBold; WpLbl.Position=UDim2.new(0,0,0,5)
+local WpBox = Instance.new("TextBox", r11); WpBox.Size=UDim2.new(0.6,0,0,25); WpBox.Position=UDim2.new(0.05,0,0,30); WpBox.PlaceholderText="Waypoint Name..."; WpBox.Text=""; WpBox.BackgroundColor3=Color3.fromRGB(30,30,30); WpBox.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", WpBox).CornerRadius = UDim.new(0,6)
+local AddWp = Instance.new("TextButton", r11); AddWp.Size=UDim2.new(0.25,0,0,25); AddWp.Position=UDim2.new(0.7,0,0,30); AddWp.Text="Add"; AddWp.BackgroundColor3=Color3.fromRGB(0,80,200); AddWp.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", AddWp).CornerRadius = UDim.new(0,6)
+local WpScroll = Instance.new("ScrollingFrame", r11); WpScroll.Size=UDim2.new(0.9,0,0,180); WpScroll.Position=UDim2.new(0.05,0,0,60); WpScroll.BackgroundColor3=Color3.fromRGB(20,20,20); WpScroll.ScrollBarThickness=3
+local WpList = Instance.new("UIListLayout", WpScroll); WpList.Padding=UDim.new(0,2)
+
+local function RefreshWp()
+	for _,v in pairs(WpScroll:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+	for name, cf in pairs(waypoints) do
+		local f = Instance.new("Frame", WpScroll); f.Size=UDim2.new(1,0,0,30); f.BackgroundTransparency=1
+		local b = Instance.new("TextButton", f); b.Size=UDim2.new(0.75,0,1,0); b.Text="  "..name; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.TextXAlignment=Enum.TextXAlignment.Left; b.Font=Enum.Font.Gotham; b.TextSize=16; Instance.new("UICorner", b).CornerRadius = UDim.new(0,4)
+		b.MouseButton1Click:Connect(function() SmartTeleport(cf); Notify("Teleport", "Warped to "..name, 2) end)
+		local d = Instance.new("TextButton", f); d.Size=UDim2.new(0.2,0,1,0); d.Position=UDim2.new(0.8,0,0,0); d.Text="Del"; d.BackgroundColor3=Color3.fromRGB(200,50,50); d.TextColor3=Color3.new(1,1,1); d.Font=Enum.Font.GothamBold; d.TextSize=16; Instance.new("UICorner", d).CornerRadius = UDim.new(0,4)
+		d.MouseButton1Click:Connect(function() waypoints[name]=nil; RefreshWp(); Notify("Teleport", "Deleted Waypoint: "..name, 2) end)
+	end
+	WpScroll.CanvasSize = UDim2.new(0,0,0,WpList.AbsoluteContentSize.Y)
+end
+_G.UpdateWpUI = RefreshWp
+AddWp.MouseButton1Click:Connect(function() local name = WpBox.Text; if name ~= "" and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then waypoints[name] = LocalPlayer.Character.HumanoidRootPart.CFrame; WpBox.Text = ""; RefreshWp(); Notify("Teleport", "Saved Waypoint: "..name, 2) end end)
+
+--- 🎯 AIMLOCK ---
+createHeader("--- 🎯 Aimlock ---", 40, GenPageScroll)
+
+local r12 = createRow(160, 41, GenPageScroll)
 local AimTitle = Instance.new("TextLabel", r12); AimTitle.Text = "Aimlock System (Toggle)"; AimTitle.Size=UDim2.new(1,0,0,20); AimTitle.Position=UDim2.new(0,0,0,5); AimTitle.BackgroundTransparency=1; AimTitle.TextColor3=Color3.new(1,1,1); AimTitle.Font=Enum.Font.GothamBold
+
 local AimSearch = Instance.new("TextBox", r12); AimSearch.Size=UDim2.new(0.5,0,0,25); AimSearch.Position=UDim2.new(0.05,0,0,30); AimSearch.PlaceholderText="Player Name..."; AimSearch.BackgroundColor3=Color3.fromRGB(30,30,30); AimSearch.TextColor3=Color3.new(1,1,1); AimSearch.Text=""; Instance.new("UICorner", AimSearch).CornerRadius = UDim.new(0,6)
 local AimKeyBtn = Instance.new("TextButton", r12); AimKeyBtn.Size=UDim2.new(0.3,0,0,25); AimKeyBtn.Position=UDim2.new(0.58,0,0,30); AimKeyBtn.Text="Key: G"; AimKeyBtn.BackgroundColor3=Color3.fromRGB(40,40,40); AimKeyBtn.TextColor3=Color3.new(0,1,1); Instance.new("UICorner", AimKeyBtn).CornerRadius = UDim.new(0,6)
 local AimRef = Instance.new("ImageButton", r12); AimRef.Size=UDim2.new(0,25,0,25); AimRef.Position=UDim2.new(0.9,0,0,30); AimRef.Image="rbxassetid://6031097225"; AimRef.BackgroundColor3=Color3.fromRGB(0,80,200); Instance.new("UICorner", AimRef).CornerRadius=UDim.new(0,6)
@@ -349,60 +404,6 @@ UserInputService.InputBegan:Connect(function(input, gp)
 		Notify("Aimlock", isAiming and "LOCKED" or "UNLOCKED", 1.5)
 	end
 end)
-
---- 📍 TELEPORT ---
-createHeader("--- 📍 Teleport ---", 12, GenPageScroll)
-
-local r9 = createRow(30, 13, GenPageScroll)
-local CtrlTpBtn = Instance.new("TextButton", r9); CtrlTpBtn.Size = UDim2.new(0.6,0,1,0); CtrlTpBtn.BackgroundTransparency=1; CtrlTpBtn.Text="Click TP: OFF"; CtrlTpBtn.TextColor3=Color3.fromRGB(200,200,200); CtrlTpBtn.Font=Enum.Font.Gotham; CtrlTpBtn.TextXAlignment = Enum.TextXAlignment.Left; CtrlTpBtn.Position = UDim2.new(0, 10, 0, 0)
-local CtrlTpKeyBtn = Instance.new("TextButton", r9); CtrlTpKeyBtn.Size = UDim2.new(0.3, 0, 0, 25); CtrlTpKeyBtn.Position = UDim2.new(0.65, 0, 0, 2.5); CtrlTpKeyBtn.Text = "Key: LCtrl"; CtrlTpKeyBtn.BackgroundColor3 = Color3.fromRGB(40,40,40); CtrlTpKeyBtn.TextColor3 = Color3.new(0,1,1); Instance.new("UICorner", CtrlTpKeyBtn).CornerRadius = UDim.new(0,6)
-CtrlTpBtn.MouseButton1Click:Connect(function() ctrlTpEnabled = not ctrlTpEnabled; CtrlTpBtn.Text = "Click TP: "..(ctrlTpEnabled and "ON" or "OFF"); CtrlTpBtn.TextColor3 = ctrlTpEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Teleport", "Click TP "..(ctrlTpEnabled and "Enabled" or "Disabled"), 2) end)
-local tpListening = false; CtrlTpKeyBtn.MouseButton1Click:Connect(function() tpListening = true; CtrlTpKeyBtn.Text = "..." end)
-UserInputService.InputBegan:Connect(function(input) if tpListening and input.UserInputType == Enum.UserInputType.Keyboard then clickTpKey = input.KeyCode; local keyStr = tostring(clickTpKey):gsub("Enum.KeyCode.", ""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; if keyStr == "RightControl" then keyStr = "RCtrl" end; CtrlTpKeyBtn.Text = "Key: "..keyStr; tpListening = false end end)
-Mouse.Button1Down:Connect(function() if ctrlTpEnabled and UserInputService:IsKeyDown(clickTpKey) and Mouse.Hit then SmartTeleport(CFrame.new(Mouse.Hit.Position)) end end)
-
-local r10 = createRow(140, 14, GenPageScroll)
-local TpLbl = Instance.new("TextLabel", r10); TpLbl.Text="Teleport to Player"; TpLbl.Size=UDim2.new(1,0,0,20); TpLbl.BackgroundTransparency=1; TpLbl.TextColor3=Color3.new(1,1,1); TpLbl.Font=Enum.Font.GothamBold; TpLbl.Position=UDim2.new(0,0,0,5)
-local TpSearch = Instance.new("TextBox", r10); TpSearch.Size=UDim2.new(0.8,0,0,25); TpSearch.Position=UDim2.new(0.05,0,0,30); TpSearch.PlaceholderText="Player Name..."; TpSearch.Text=""; TpSearch.BackgroundColor3=Color3.fromRGB(30,30,30); TpSearch.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", TpSearch).CornerRadius = UDim.new(0,6)
-local RefreshTp = Instance.new("ImageButton", r10); RefreshTp.Size = UDim2.new(0,25,0,25); RefreshTp.Position=UDim2.new(0.88,0,0,30); RefreshTp.BackgroundColor3=Color3.fromRGB(0,80,200); RefreshTp.Image="rbxassetid://6031097225"; RefreshTp.ZIndex = 2; Instance.new("UICorner", RefreshTp).CornerRadius = UDim.new(0,6)
-local TpScroll = Instance.new("ScrollingFrame", r10); TpScroll.Size = UDim2.new(0.9, 0, 0, 70); TpScroll.Position = UDim2.new(0.05, 0, 0, 60); TpScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20); TpScroll.CanvasSize = UDim2.new(0,0,0,0); TpScroll.ScrollBarThickness = 2
-local TpList = Instance.new("UIListLayout", TpScroll); TpList.Padding=UDim.new(0,2)
-
-local function RefreshPlayerList(filter)
-	for _,v in pairs(TpScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-	for _,p in pairs(Players:GetPlayers()) do
-		if p~=LocalPlayer then
-			local show = true; if filter and filter ~= "" then if not (string.find(string.lower(p.Name), string.lower(filter)) or string.find(string.lower(p.DisplayName), string.lower(filter))) then show = false end end
-			if show then
-				local b = Instance.new("TextButton", TpScroll); b.Size=UDim2.new(1,0,0,25); b.Text = p.DisplayName .. " (@" .. p.Name .. ")"; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.Font=Enum.Font.Gotham; b.TextSize=12
-				b.MouseButton1Click:Connect(function() if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then SmartTeleport(p.Character.HumanoidRootPart.CFrame); Notify("Teleport", "Teleported to "..p.Name, 2) end end)
-			end
-		end
-	end
-	TpScroll.CanvasSize = UDim2.new(0,0,0,TpList.AbsoluteContentSize.Y)
-end
-RefreshTp.MouseButton1Click:Connect(function() RefreshPlayerList(TpSearch.Text) end); TpSearch.Changed:Connect(function(prop) if prop == "Text" then RefreshPlayerList(TpSearch.Text) end end); RefreshPlayerList("")
-
-local r11 = createRow(250, 15, GenPageScroll) 
-local WpLbl = Instance.new("TextLabel", r11); WpLbl.Text="Waypoints System"; WpLbl.Size=UDim2.new(1,0,0,20); WpLbl.BackgroundTransparency=1; WpLbl.TextColor3=Color3.new(1,1,1); WpLbl.Font=Enum.Font.GothamBold; WpLbl.Position=UDim2.new(0,0,0,5)
-local WpBox = Instance.new("TextBox", r11); WpBox.Size=UDim2.new(0.6,0,0,25); WpBox.Position=UDim2.new(0.05,0,0,30); WpBox.PlaceholderText="Waypoint Name..."; WpBox.Text=""; WpBox.BackgroundColor3=Color3.fromRGB(30,30,30); WpBox.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", WpBox).CornerRadius = UDim.new(0,6)
-local AddWp = Instance.new("TextButton", r11); AddWp.Size=UDim2.new(0.25,0,0,25); AddWp.Position=UDim2.new(0.7,0,0,30); AddWp.Text="Add"; AddWp.BackgroundColor3=Color3.fromRGB(0,80,200); AddWp.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", AddWp).CornerRadius = UDim.new(0,6)
-local WpScroll = Instance.new("ScrollingFrame", r11); WpScroll.Size=UDim2.new(0.9,0,0,180); WpScroll.Position=UDim2.new(0.05,0,0,60); WpScroll.BackgroundColor3=Color3.fromRGB(20,20,20); WpScroll.ScrollBarThickness=3
-local WpList = Instance.new("UIListLayout", WpScroll); WpList.Padding=UDim.new(0,2)
-
-local function RefreshWp()
-	for _,v in pairs(WpScroll:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
-	for name, cf in pairs(waypoints) do
-		local f = Instance.new("Frame", WpScroll); f.Size=UDim2.new(1,0,0,30); f.BackgroundTransparency=1
-		local b = Instance.new("TextButton", f); b.Size=UDim2.new(0.75,0,1,0); b.Text="  "..name; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.TextXAlignment=Enum.TextXAlignment.Left; b.Font=Enum.Font.Gotham; b.TextSize=16
-		b.MouseButton1Click:Connect(function() SmartTeleport(cf); Notify("Teleport", "Warped to "..name, 2) end)
-		local d = Instance.new("TextButton", f); d.Size=UDim2.new(0.2,0,1,0); d.Position=UDim2.new(0.8,0,0,0); d.Text="Del"; d.BackgroundColor3=Color3.fromRGB(200,50,50); d.TextColor3=Color3.new(1,1,1); d.Font=Enum.Font.GothamBold; d.TextSize=16
-		d.MouseButton1Click:Connect(function() waypoints[name]=nil; RefreshWp(); Notify("Teleport", "Deleted Waypoint: "..name, 2) end)
-	end
-	WpScroll.CanvasSize = UDim2.new(0,0,0,WpList.AbsoluteContentSize.Y)
-end
-_G.UpdateWpUI = RefreshWp -- Expose for config loading
-AddWp.MouseButton1Click:Connect(function() local name = WpBox.Text; if name ~= "" and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then waypoints[name] = LocalPlayer.Character.HumanoidRootPart.CFrame; WpBox.Text = ""; RefreshWp(); Notify("Teleport", "Saved Waypoint: "..name, 2) end end)
 
 -- ================= SETTING CONTENT ================= --
 local AfkFrame = createRow(40, 1, SetPageScroll)
@@ -446,7 +447,7 @@ local BriDot = Instance.new("TextButton", BriSlider); BriDot.Size = UDim2.new(0,
 local isMaxBri = false; local origLighting = {Brightness = Lighting.Brightness, Ambient = Lighting.Ambient, OutdoorAmbient = Lighting.OutdoorAmbient, GlobalShadows = Lighting.GlobalShadows, ClockTime = Lighting.ClockTime}
 local function UpdateBri(val) local b = math.clamp(val, 0, 10); Lighting.Brightness = b; local percent = b / 10; BriFill.Size = UDim2.new(percent, 0, 1, 0); BriDot.Position = UDim2.new(percent, -6, 0.5, -6) end
 local briDrag2 = false; BriDot.MouseButton1Down:Connect(function() briDrag2 = true end)
-MaxBtn.MouseButton1Click:Connect(function() isMaxBri = not isMaxBri; MaxBtn.Text = "Max: "..(isMaxBri and "ON" or "OFF"); MaxBtn.BackgroundColor3 = isMaxBri and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40); Notify("Visual", "True Fullbright "..(isMaxBri and "ON" or "OFF"), 2); if isMaxBri then origLighting.Brightness = Lighting.Brightness; origLighting.Ambient = Lighting.Ambient; origLighting.OutdoorAmbient = Lighting.OutdoorAmbient; origLighting.GlobalShadows = Lighting.GlobalShadows; origLighting.ClockTime = Lighting.ClockTime else Lighting.Brightness = origLighting.Brightness; Lighting.Ambient = origLighting.Ambient; Lighting.OutdoorAmbient = origLighting.OutdoorAmbient; Lighting.GlobalShadows = Lighting.GlobalShadows; Lighting.ClockTime = origLighting.ClockTime end end)
+MaxBtn.MouseButton1Click:Connect(function() isMaxBri = not isMaxBri; MaxBtn.Text = "Max: "..(isMaxBri and "ON" or "OFF"); MaxBtn.BackgroundColor3 = isMaxBri and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40); Notify("Visual", "True Fullbright "..(isMaxBri and "ON" or "OFF"), 2); if isMaxBri then origLighting.Brightness = Lighting.Brightness; origLighting.Ambient = Lighting.Ambient; origLighting.OutdoorAmbient = Lighting.OutdoorAmbient; origLighting.GlobalShadows = Lighting.GlobalShadows; origLighting.ClockTime = Lighting.ClockTime else Lighting.Brightness = origLighting.Brightness; Lighting.Ambient = origLighting.Ambient; Lighting.OutdoorAmbient = origLighting.OutdoorAmbient; Lighting.GlobalShadows = origLighting.GlobalShadows; Lighting.ClockTime = origLighting.ClockTime end end)
 
 local KeyFrame = createRow(40, 7, SetPageScroll)
 local KeyLbl = Instance.new("TextLabel", KeyFrame); KeyLbl.Text="Menu Toggle Key:"; KeyLbl.Size=UDim2.new(0.5,0,1,0); KeyLbl.Position=UDim2.new(0,10,0,0); KeyLbl.BackgroundTransparency=1; KeyLbl.TextColor3=Color3.new(1,1,1); KeyLbl.TextXAlignment=Enum.TextXAlignment.Left; KeyLbl.Font=Enum.Font.Gotham
@@ -454,7 +455,7 @@ local KeyBtn = Instance.new("TextButton", KeyFrame); KeyBtn.Size=UDim2.new(0.4,0
 local listening = false; KeyBtn.MouseButton1Click:Connect(function() listening=true; KeyBtn.Text="Press any key..."; KeyBtn.TextColor3=Color3.new(1,1,0) end)
 UserInputService.InputBegan:Connect(function(input) 
 	if listening and input.UserInputType==Enum.UserInputType.Keyboard then 
-		toggleKey = input.KeyCode; KeyBtn.Text=tostring(toggleKey):gsub("Enum.KeyCode.",""); KeyBtn.TextColor3=Color3.new(0,1,1); listening=false 
+		toggleKey = input.KeyCode; local keyStr = tostring(toggleKey):gsub("Enum.KeyCode.",""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; if keyStr == "RightControl" then keyStr = "RCtrl" end; KeyBtn.Text=keyStr; KeyBtn.TextColor3=Color3.new(0,1,1); listening=false 
 	elseif input.KeyCode==toggleKey and not listening then 
 		MainFrame.Visible = not MainFrame.Visible 
 	end 
@@ -470,8 +471,32 @@ RejoinBtn.MouseButton1Click:Connect(function() TeleportService:TeleportToPlaceIn
 local CopyBtn = Instance.new("TextButton", SetPageScroll); CopyBtn.LayoutOrder = 10; CopyBtn.Size=UDim2.new(1,0,0,30); CopyBtn.BackgroundColor3=Color3.fromRGB(0,80,200); CopyBtn.Text="Copy Server ID"; CopyBtn.TextColor3=Color3.new(1,1,1); CopyBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", CopyBtn).CornerRadius=UDim.new(0,6)
 CopyBtn.MouseButton1Click:Connect(function() setclipboard(game.JobId); CopyBtn.Text="Copied!"; Notify("System", "Job ID Copied to Clipboard!", 2); task.wait(1); CopyBtn.Text="Copy Server ID" end)
 
+-- *** SYNC TOGGLES FROM CONFIG ***
+_G.SyncTogglesFromConfig = function()
+	InfBtn.Text = "Infinite Jump: "..(isInfJump and "ON" or "OFF"); InfBtn.TextColor3 = isInfJump and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
+	JmpBtn.Text = "JumpPower: " .. (isJumpEnabled and "ON" or "OFF"); JmpBtn.TextColor3 = isJumpEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8)
+	SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF"); SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8)
+	EspBtn.Text = "ESP Players: "..(espEnabled and "ON" or "OFF"); EspBtn.TextColor3 = espEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
+	
+	CtrlTpBtn.Text = "Click TP: "..(ctrlTpEnabled and "ON" or "OFF")
+	CtrlTpBtn.TextColor3 = ctrlTpEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
+
+	local function formatKey(k)
+		local s = tostring(k):gsub("Enum.KeyCode.", "")
+		if s == "LeftControl" then return "LCtrl" end
+		if s == "RightControl" then return "RCtrl" end
+		return s
+	end
+
+	CtrlTpKeyBtn.Text = "Key: "..formatKey(clickTpKey)
+	AimKeyBtn.Text = "Key: "..formatKey(aimlockKey)
+	KeyBtn.Text = formatKey(toggleKey)
+
+	if espEnabled then for _,p in pairs(Players:GetPlayers()) do AddEsp(p) end else ClearESP() end
+end
+
 -- *** FIXED MAIN LOOP ***
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(deltaTime)
 	if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then flyDrag = false; spdDrag = false; briDrag2 = false; jmpDrag = false; espDrag = false end
 	local mousePos = UserInputService:GetMouseLocation().X
 	if flyDrag then local pos = math.clamp((mousePos - FlySlider.AbsolutePosition.X) / FlySlider.AbsoluteSize.X, 0, 1); _G.UpdateFly(pos * 500) end
@@ -480,7 +505,18 @@ RunService.RenderStepped:Connect(function()
 	if briDrag2 then local pos = math.clamp((mousePos - BriSlider.AbsolutePosition.X) / BriSlider.AbsoluteSize.X, 0, 1); UpdateBri(pos * 10); if isMaxBri then isMaxBri = false; MaxBtn.Text = "Max: OFF"; MaxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end end
 	if espDrag then local pos = math.clamp((mousePos - EspSlider.AbsolutePosition.X) / EspSlider.AbsoluteSize.X, 0, 1); _G.UpdateEspSize(8 + pos * (32 - 8)) end
 
-	if isSpeedEnabled and LocalPlayer.Character then local hum = LocalPlayer.Character:FindFirstChild("Humanoid"); if hum then hum.WalkSpeed = targetSpeed end end
+	if isSpeedEnabled and LocalPlayer.Character then 
+		local hum = LocalPlayer.Character:FindFirstChild("Humanoid")
+		local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+		if hum and hrp and not isFlying then 
+			hum.WalkSpeed = targetSpeed 
+			if hum.MoveDirection.Magnitude > 0 then
+				local boost = targetSpeed - 16
+				if boost > 0 then hrp.CFrame = hrp.CFrame + (hum.MoveDirection * (boost * deltaTime)) end
+			end
+		end 
+	end
+
 	if isJumpEnabled and LocalPlayer.Character then local hum = LocalPlayer.Character:FindFirstChild("Humanoid"); if hum then hum.UseJumpPower = true; hum.JumpPower = targetJump end end
 	if isMaxBri then Lighting.Brightness = 2; Lighting.Ambient = Color3.new(1, 1, 1); Lighting.OutdoorAmbient = Color3.new(1, 1, 1); Lighting.GlobalShadows = false; Lighting.ClockTime = 14 end
 	if isFrozen and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then local hrp = LocalPlayer.Character.HumanoidRootPart; hrp.Anchored = true; hrp.Velocity = Vector3.new(0,0,0); hrp.RotVelocity = Vector3.new(0,0,0) end
