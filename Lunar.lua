@@ -15,6 +15,31 @@ local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local Camera = Workspace.CurrentCamera
 
+-- *** AUTO ANTI-AFK SYSTEM ***
+LocalPlayer.Idled:Connect(function()
+	pcall(function()
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new(0,0))
+	end)
+end)
+
+-- *** INSTANT PROXIMITY PROMPTS SYSTEM ***
+local function makeInstant(prompt)
+	if prompt:IsA("ProximityPrompt") then
+		prompt.HoldDuration = 0
+	end
+end
+
+task.spawn(function()
+	for _, obj in pairs(Workspace:GetDescendants()) do
+		makeInstant(obj)
+	end
+end)
+
+game.DescendantAdded:Connect(function(descendant)
+	task.defer(makeInstant, descendant)
+end)
+
 -- *** UNIVERSAL ANTI-DUPLICATE SYSTEM ***
 local function clearOldHubs()
 	for _, gui in pairs(CoreGui:GetChildren()) do if string.find(gui.Name, "FoxyHub") then gui:Destroy() end end
@@ -26,7 +51,7 @@ clearOldHubs()
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FoxyHub_Ultimate_v11"
+ScreenGui.Name = "FoxyHub_Ultimate_v13"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -66,7 +91,7 @@ end
 local flySpeed = 50; local isFlying = false; local isNoclipping = false; local isInfJump = false
 local isSpeedEnabled = false; local isJumpEnabled = false; local targetSpeed = 16; local targetJump = 50
 local espEnabled = false; local waypoints = {}; local toggleKey = Enum.KeyCode.RightControl
-local antiAfkEnabled = false; local isFrozen = false; local antiAdminEnabled = false
+local isFrozen = false; local antiAdminEnabled = false
 local ctrlTpEnabled = false; local clickTpKey = Enum.KeyCode.LeftControl
 local aimlockKey = Enum.KeyCode.G; local aimlockTarget = nil; local isAiming = false
 local shiftLockSystemEnabled = false; local isShiftLocked = false
@@ -179,7 +204,6 @@ SaveBtn.MouseButton1Click:Connect(function()
 	local cfg = { 
 		fly = flySpeed, spd = targetSpeed, jmp = targetJump, eDist = espDangerDist, eSize = espTextSize, 
 		tKey = toggleKey.Name, aKey = aimlockKey.Name, cKey = clickTpKey.Name, wps = savedWps,
-		-- Save States
 		infJ = isInfJump, jmpE = isJumpEnabled, spdE = isSpeedEnabled, espE = espEnabled, ctrlTp = ctrlTpEnabled
 	}
 	pcall(function() writefile(cfgName, HttpService:JSONEncode(cfg)); Notify("Config System", "Settings, States & Waypoints Saved!", 3) end)
@@ -190,13 +214,9 @@ LoadBtn.MouseButton1Click:Connect(function()
 			local data = HttpService:JSONDecode(readfile(cfgName))
 			flySpeed = data.fly or 50; targetSpeed = data.spd or 16; targetJump = data.jmp or 50; espDangerDist = data.eDist or 50; espTextSize = data.eSize or 14
 			toggleKey = Enum.KeyCode[data.tKey or "RightControl"]; aimlockKey = Enum.KeyCode[data.aKey or "G"]; clickTpKey = Enum.KeyCode[data.cKey or "LeftControl"]
-			
-			-- Load States
 			isInfJump = data.infJ or false; isJumpEnabled = data.jmpE or false; isSpeedEnabled = data.spdE or false; espEnabled = data.espE or false; ctrlTpEnabled = data.ctrlTp or false
-			
 			if data.wps then waypoints = {}; for name, comps in pairs(data.wps) do waypoints[name] = CFrame.new(unpack(comps)) end; pcall(function() _G.UpdateWpUI() end) end
-			UpdateUI_FromConfig()
-			pcall(function() _G.SyncTogglesFromConfig() end) -- Sync Visual UI
+			UpdateUI_FromConfig(); pcall(function() _G.SyncTogglesFromConfig() end)
 			Notify("Config System", "Settings Loaded Successfully!", 3)
 		else Notify("Config System", "No Config File Found!", 3) end
 	end)
@@ -241,8 +261,8 @@ UserInputService.JumpRequest:Connect(function() if isInfJump then LocalPlayer.Ch
 local r2 = createRow(55, 3, GenPageScroll)
 local JmpBtn = Instance.new("TextButton", r2); JmpBtn.Size = UDim2.new(0.6, 0, 0, 25); JmpBtn.Position = UDim2.new(0, 10, 0, 5); JmpBtn.BackgroundTransparency = 1; JmpBtn.Text = "JumpPower: OFF"; JmpBtn.TextColor3 = Color3.fromRGB(200, 200, 200); JmpBtn.TextXAlignment = Enum.TextXAlignment.Left; JmpBtn.Font = Enum.Font.Gotham
 local JmpBox = Instance.new("TextBox", r2); JmpBox.Size = UDim2.new(0.2, 0, 0, 20); JmpBox.Position = UDim2.new(0.75, 0, 0, 5); JmpBox.Text = "50"; JmpBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30); JmpBox.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", JmpBox).CornerRadius = UDim.new(0, 4)
-local JmpSlider = Instance.new("Frame", r2); JmpSlider.Size = UDim2.new(0.9, 0, 0, 4); JmpSlider.Position = UDim2.new(0.05, 0, 0, 40); JmpSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local JmpFill = Instance.new("Frame", JmpSlider); JmpFill.Size = UDim2.new(50/500, 0, 1, 0); JmpFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local JmpDot = Instance.new("TextButton", JmpSlider); JmpDot.Size = UDim2.new(0, 12, 0, 12); JmpDot.Position = UDim2.new(50/500, -6, 0.5, -6); JmpDot.Text = ""; JmpDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", JmpDot).CornerRadius = UDim.new(1, 0)
-_G.UpdateJmp = function(val) targetJump = math.clamp(val, 0, 500); JmpBox.Text = tostring(math.floor(targetJump)); JmpFill.Size = UDim2.new(targetJump/500, 0, 1, 0); JmpDot.Position = UDim2.new(targetJump/500, -6, 0.5, -6) end
+local JmpSlider = Instance.new("Frame", r2); JmpSlider.Size = UDim2.new(0.9, 0, 0, 4); JmpSlider.Position = UDim2.new(0.05, 0, 0, 40); JmpSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local JmpFill = Instance.new("Frame", JmpSlider); JmpFill.Size = UDim2.new(50/5000, 0, 1, 0); JmpFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local JmpDot = Instance.new("TextButton", JmpSlider); JmpDot.Size = UDim2.new(0, 12, 0, 12); JmpDot.Position = UDim2.new(50/5000, -6, 0.5, -6); JmpDot.Text = ""; JmpDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", JmpDot).CornerRadius = UDim.new(1, 0)
+_G.UpdateJmp = function(val) targetJump = math.clamp(val, 0, 5000); JmpBox.Text = tostring(math.floor(targetJump)); JmpFill.Size = UDim2.new(targetJump/5000, 0, 1, 0); JmpDot.Position = UDim2.new(targetJump/5000, -6, 0.5, -6) end
 local jmpDrag = false; JmpDot.MouseButton1Down:Connect(function() jmpDrag = true end); JmpBox.FocusLost:Connect(function() _G.UpdateJmp(tonumber(JmpBox.Text) or 50) end)
 JmpBtn.MouseButton1Click:Connect(function() isJumpEnabled = not isJumpEnabled; JmpBtn.Text = "JumpPower: " .. (isJumpEnabled and "ON" or "OFF"); JmpBtn.TextColor3 = isJumpEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8); if not isJumpEnabled and LocalPlayer.Character then LocalPlayer.Character.Humanoid.JumpPower = 50; LocalPlayer.Character.Humanoid.UseJumpPower = true end; Notify("Movement", "Custom Jump "..(isJumpEnabled and "Enabled" or "Disabled"), 2) end)
 
@@ -254,8 +274,8 @@ RunService.Stepped:Connect(function() if isNoclipping and LocalPlayer.Character 
 local r4 = createRow(55, 5, GenPageScroll)
 local FlyBtn = Instance.new("TextButton", r4); FlyBtn.Size = UDim2.new(0.6,0,0,25); FlyBtn.Position=UDim2.new(0,10,0,5); FlyBtn.BackgroundTransparency=1; FlyBtn.Text="Fly: OFF"; FlyBtn.TextXAlignment=Enum.TextXAlignment.Left; FlyBtn.TextColor3=Color3.fromRGB(200,200,200); FlyBtn.Font=Enum.Font.Gotham
 local FlyBox = Instance.new("TextBox", r4); FlyBox.Size=UDim2.new(0.2,0,0,20); FlyBox.Position=UDim2.new(0.75,0,0,5); FlyBox.Text="50"; FlyBox.BackgroundColor3=Color3.fromRGB(30,30,30); FlyBox.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", FlyBox).CornerRadius=UDim.new(0,4)
-local FlySlider = Instance.new("Frame", r4); FlySlider.Size = UDim2.new(0.9, 0, 0, 4); FlySlider.Position = UDim2.new(0.05, 0, 0, 40); FlySlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local FlyFill = Instance.new("Frame", FlySlider); FlyFill.Size = UDim2.new(50/500, 0, 1, 0); FlyFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local FlyDot = Instance.new("TextButton", FlySlider); FlyDot.Size = UDim2.new(0, 12, 0, 12); FlyDot.Position = UDim2.new(50/500, -6, 0.5, -6); FlyDot.Text = ""; FlyDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", FlyDot).CornerRadius = UDim.new(1, 0)
-_G.UpdateFly = function(val) flySpeed = math.clamp(val, 0, 500); FlyBox.Text = tostring(math.floor(flySpeed)); FlyFill.Size = UDim2.new(flySpeed/500, 0, 1, 0); FlyDot.Position = UDim2.new(flySpeed/500, -6, 0.5, -6) end
+local FlySlider = Instance.new("Frame", r4); FlySlider.Size = UDim2.new(0.9, 0, 0, 4); FlySlider.Position = UDim2.new(0.05, 0, 0, 40); FlySlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local FlyFill = Instance.new("Frame", FlySlider); FlyFill.Size = UDim2.new(50/5000, 0, 1, 0); FlyFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local FlyDot = Instance.new("TextButton", FlySlider); FlyDot.Size = UDim2.new(0, 12, 0, 12); FlyDot.Position = UDim2.new(50/5000, -6, 0.5, -6); FlyDot.Text = ""; FlyDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", FlyDot).CornerRadius = UDim.new(1, 0)
+_G.UpdateFly = function(val) flySpeed = math.clamp(val, 0, 5000); FlyBox.Text = tostring(math.floor(flySpeed)); FlyFill.Size = UDim2.new(flySpeed/5000, 0, 1, 0); FlyDot.Position = UDim2.new(flySpeed/5000, -6, 0.5, -6) end
 local flyDrag = false; FlyDot.MouseButton1Down:Connect(function() flyDrag = true end); FlyBox.FocusLost:Connect(function() _G.UpdateFly(tonumber(FlyBox.Text) or 50) end)
 FlyBtn.MouseButton1Click:Connect(function()
 	isFlying = not isFlying; FlyBtn.Text = "Fly: "..(isFlying and "ON" or "OFF"); FlyBtn.TextColor3 = isFlying and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Movement", "Fly "..(isFlying and "Enabled" or "Disabled"), 2)
@@ -283,8 +303,8 @@ end)
 local r5 = createRow(55, 6, GenPageScroll)
 local SpdBtn = Instance.new("TextButton", r5); SpdBtn.Size = UDim2.new(0.6, 0, 0, 25); SpdBtn.Position = UDim2.new(0, 10, 0, 5); SpdBtn.BackgroundTransparency = 1; SpdBtn.Text = "WalkSpeed: OFF"; SpdBtn.TextColor3 = Color3.fromRGB(200, 200, 200); SpdBtn.TextXAlignment = Enum.TextXAlignment.Left; SpdBtn.Font = Enum.Font.Gotham
 local SpdBox = Instance.new("TextBox", r5); SpdBox.Size = UDim2.new(0.2, 0, 0, 20); SpdBox.Position = UDim2.new(0.75, 0, 0, 5); SpdBox.Text = "16"; SpdBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30); SpdBox.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", SpdBox).CornerRadius = UDim.new(0, 4)
-local SpdSlider = Instance.new("Frame", r5); SpdSlider.Size = UDim2.new(0.9, 0, 0, 4); SpdSlider.Position = UDim2.new(0.05, 0, 0, 40); SpdSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local SpdFill = Instance.new("Frame", SpdSlider); SpdFill.Size = UDim2.new(16/500, 0, 1, 0); SpdFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local SpdDot = Instance.new("TextButton", SpdSlider); SpdDot.Size = UDim2.new(0, 12, 0, 12); SpdDot.Position = UDim2.new(16/500, -6, 0.5, -6); SpdDot.Text = ""; SpdDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", SpdDot).CornerRadius = UDim.new(1, 0)
-_G.UpdateSpd = function(val) targetSpeed = math.clamp(val, 0, 500); SpdBox.Text = tostring(math.floor(targetSpeed)); SpdFill.Size = UDim2.new(targetSpeed/500, 0, 1, 0); SpdDot.Position = UDim2.new(targetSpeed/500, -6, 0.5, -6) end
+local SpdSlider = Instance.new("Frame", r5); SpdSlider.Size = UDim2.new(0.9, 0, 0, 4); SpdSlider.Position = UDim2.new(0.05, 0, 0, 40); SpdSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local SpdFill = Instance.new("Frame", SpdSlider); SpdFill.Size = UDim2.new(16/5000, 0, 1, 0); SpdFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local SpdDot = Instance.new("TextButton", SpdSlider); SpdDot.Size = UDim2.new(0, 12, 0, 12); SpdDot.Position = UDim2.new(16/5000, -6, 0.5, -6); SpdDot.Text = ""; SpdDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", SpdDot).CornerRadius = UDim.new(1, 0)
+_G.UpdateSpd = function(val) targetSpeed = math.clamp(val, 0, 5000); SpdBox.Text = tostring(math.floor(targetSpeed)); SpdFill.Size = UDim2.new(targetSpeed/5000, 0, 1, 0); SpdDot.Position = UDim2.new(targetSpeed/5000, -6, 0.5, -6) end
 local spdDrag = false; SpdDot.MouseButton1Down:Connect(function() spdDrag = true end); SpdBox.FocusLost:Connect(function() _G.UpdateSpd(tonumber(SpdBox.Text) or 16) end)
 SpdBtn.MouseButton1Click:Connect(function() isSpeedEnabled = not isSpeedEnabled; SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF"); SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8); if not isSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 16 end; Notify("Movement", "CF WalkSpeed "..(isSpeedEnabled and "Enabled" or "Disabled"), 2) end)
 
@@ -406,26 +426,50 @@ UserInputService.InputBegan:Connect(function(input, gp)
 end)
 
 -- ================= SETTING CONTENT ================= --
-local AfkFrame = createRow(40, 1, SetPageScroll)
-local AfkBtn = Instance.new("TextButton", AfkFrame); AfkBtn.Size=UDim2.new(0.9,0,0,30); AfkBtn.Position=UDim2.new(0.05,0,0,5); AfkBtn.BackgroundColor3=Color3.fromRGB(30,30,30); AfkBtn.Text="Anti-AFK: OFF"; AfkBtn.TextColor3=Color3.fromRGB(200,200,200); AfkBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", AfkBtn).CornerRadius=UDim.new(0,6)
-AfkBtn.MouseButton1Click:Connect(function() antiAfkEnabled = not antiAfkEnabled; AfkBtn.Text = "Anti-AFK: "..(antiAfkEnabled and "ON" or "OFF"); AfkBtn.TextColor3 = antiAfkEnabled and Color3.new(0,1,0) or Color3.fromRGB(200,200,200); Notify("Settings", "Anti-AFK "..(antiAfkEnabled and "Enabled" or "Disabled"), 2) end)
-task.spawn(function() while true do task.wait(60); if antiAfkEnabled then pcall(function() VirtualUser:CaptureController(); VirtualUser:ClickButton2(Vector2.new(0,0)) end) end end end)
+local function ServerHop()
+	local PlaceID = game.PlaceId
+	local AllIDs = {}
+	local found = false
+	Notify("System", "Finding a different server...", 3)
+	
+	local function Fetch()
+		local url = 'https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100'
+		local success, result = pcall(function() return HttpService:JSONDecode(game:HttpGet(url)) end)
+		
+		if success and result and result.data then
+			for i, v in pairs(result.data) do 
+				if v.playing > 0 and v.playing < v.maxPlayers and v.id ~= game.JobId then 
+					table.insert(AllIDs, v.id) 
+				end 
+			end
+			
+			if #AllIDs > 0 then 
+				local randomServer = AllIDs[math.random(1, #AllIDs)]
+				Notify("System", "Teleporting to another server...", 3)
+				TeleportService:TeleportToPlaceInstance(PlaceID, randomServer, LocalPlayer) 
+				found = true 
+			end 
+		end
+	end
+	
+	Fetch()
+	if not found then 
+		task.wait(1)
+		Fetch() 
+		if not found then Notify("System", "No other servers found right now.", 3) end
+	end
+end
 
-local AaFrame = createRow(40, 2, SetPageScroll)
+local AaFrame = createRow(40, 1, SetPageScroll)
 local AaBtn = Instance.new("TextButton", AaFrame); AaBtn.Size=UDim2.new(0.9,0,0,30); AaBtn.Position=UDim2.new(0.05,0,0,5); AaBtn.BackgroundColor3=Color3.fromRGB(30,30,30); AaBtn.Text="Anti-Admin (Auto Hop): OFF"; AaBtn.TextColor3=Color3.fromRGB(200,200,200); AaBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", AaBtn).CornerRadius = UDim.new(0,6)
 AaBtn.MouseButton1Click:Connect(function() antiAdminEnabled = not antiAdminEnabled; AaBtn.Text = "Anti-Admin (Auto Hop): "..(antiAdminEnabled and "ON" or "OFF"); AaBtn.TextColor3 = antiAdminEnabled and Color3.new(0,1,0) or Color3.fromRGB(200,200,200); Notify("Settings", "Anti-Admin "..(antiAdminEnabled and "Enabled" or "Disabled"), 2) end)
-local function ServerHop()
-	local PlaceID = game.PlaceId; local AllIDs = {}; local found = false; Notify("System", "Hopping to another server...", 5)
-	local function Fetch() local site = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. PlaceID .. '/servers/Public?sortOrder=Asc&limit=100')); for i, v in pairs(site.data) do if v.playing ~= v.maxPlayers and v.id ~= game.JobId then table.insert(AllIDs, v.id) end end; if #AllIDs > 0 then TeleportService:TeleportToPlaceInstance(PlaceID, AllIDs[math.random(1, #AllIDs)], LocalPlayer); found = true end end
-	pcall(Fetch); if not found then task.wait(1); pcall(Fetch) end
-end
 task.spawn(function() while true do task.wait(2); if antiAdminEnabled then for _, p in pairs(Players:GetPlayers()) do if p ~= LocalPlayer and (p.UserId == game.CreatorId or (game.CreatorType == Enum.CreatorType.Group and p:GetRankInGroup(game.CreatorId) >= 200)) then ServerHop() end end end end end)
 
-local HopFrame = createRow(40, 3, SetPageScroll)
-local HopBtn = Instance.new("TextButton", HopFrame); HopBtn.Size=UDim2.new(0.9,0,0,30); HopBtn.Position=UDim2.new(0.05,0,0,5); HopBtn.BackgroundColor3=Color3.fromRGB(0, 150, 255); HopBtn.Text="Server Hop (Find New)"; HopBtn.TextColor3=Color3.new(1,1,1); HopBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", HopBtn).CornerRadius = UDim.new(0,6)
+local HopFrame = createRow(40, 2, SetPageScroll)
+local HopBtn = Instance.new("TextButton", HopFrame); HopBtn.Size=UDim2.new(0.9,0,0,30); HopBtn.Position=UDim2.new(0.05,0,0,5); HopBtn.BackgroundColor3=Color3.fromRGB(0, 150, 255); HopBtn.Text="Server Hop (Random Server)"; HopBtn.TextColor3=Color3.new(1,1,1); HopBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", HopBtn).CornerRadius = UDim.new(0,6)
 HopBtn.MouseButton1Click:Connect(ServerHop)
 
-local ShiftFrame = createRow(40, 4, SetPageScroll)
+local ShiftFrame = createRow(40, 3, SetPageScroll)
 local SLBtn = Instance.new("TextButton", ShiftFrame); SLBtn.Size=UDim2.new(0.9,0,0,30); SLBtn.Position=UDim2.new(0.05,0,0,5); SLBtn.BackgroundColor3=Color3.fromRGB(30,30,30); SLBtn.Text="Enable ShiftLock System: OFF"; SLBtn.TextColor3=Color3.fromRGB(200,200,200); SLBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", SLBtn).CornerRadius=UDim.new(0,6)
 local SLDrag = Instance.new("TextButton", ScreenGui); SLDrag.Name = "ShiftLockButton"; SLDrag.Size = UDim2.new(0, 50, 0, 50); SLDrag.Position = UDim2.new(0.8, 0, 0.7, 0); SLDrag.BackgroundColor3 = Color3.fromRGB(20,20,20); SLDrag.Text = ""; SLDrag.Visible = false; Instance.new("UICorner", SLDrag).CornerRadius = UDim.new(1,0); local SLIcon = Instance.new("ImageLabel", SLDrag); SLIcon.Size = UDim2.new(0.6,0,0.6,0); SLIcon.Position = UDim2.new(0.2,0,0.2,0); SLIcon.BackgroundTransparency = 1; SLIcon.Image = "rbxassetid://7059346373"; SLIcon.ImageColor3 = Color3.fromRGB(150,150,150); local SLStroke = Instance.new("UIStroke", SLDrag); SLStroke.Color = Color3.fromRGB(255,255,255); SLStroke.Thickness = 2
 local function ToggleLock() if not shiftLockSystemEnabled then return end; isShiftLocked = not isShiftLocked; if isShiftLocked then SLIcon.ImageColor3=Color3.fromRGB(0,255,255); SLStroke.Color=Color3.fromRGB(0,255,255); UserInputService.MouseBehavior=Enum.MouseBehavior.LockCenter else SLIcon.ImageColor3=Color3.fromRGB(150,150,150); SLStroke.Color=Color3.fromRGB(255,255,255); if not isAiming then UserInputService.MouseBehavior=Enum.MouseBehavior.Default end end end
@@ -433,12 +477,12 @@ SLBtn.MouseButton1Click:Connect(function() shiftLockSystemEnabled = not shiftLoc
 SLDrag.MouseButton1Click:Connect(ToggleLock); UserInputService.InputBegan:Connect(function(input, gp) if not gp and shiftLockSystemEnabled and (input.KeyCode == Enum.KeyCode.LeftShift or input.KeyCode == Enum.KeyCode.RightShift) then ToggleLock() end end)
 local d2, ds2, sp2; SLDrag.InputBegan:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then d2=true; ds2=i.Position; sp2=SLDrag.Position end end); UserInputService.InputChanged:Connect(function(i) if d2 and i.UserInputType==Enum.UserInputType.MouseMovement then local d=i.Position-ds2; SLDrag.Position=UDim2.new(sp2.X.Scale, sp2.X.Offset+d.X, sp2.Y.Scale, sp2.Y.Offset+d.Y) end end); UserInputService.InputEnded:Connect(function(i) if i.UserInputType==Enum.UserInputType.MouseButton1 then d2=false end end)
 
-local FogFrame = createRow(40, 5, SetPageScroll)
+local FogFrame = createRow(40, 4, SetPageScroll)
 local FogBtn = Instance.new("TextButton", FogFrame); FogBtn.Size=UDim2.new(0.9,0,0,30); FogBtn.Position=UDim2.new(0.05,0,0,5); FogBtn.BackgroundColor3=Color3.fromRGB(30,30,30); FogBtn.Text="No Fog: OFF"; FogBtn.TextColor3=Color3.fromRGB(200,200,200); FogBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", FogBtn).CornerRadius=UDim.new(0,6)
 local noFogEnabled = false; local lightingStatsFog = {FogEnd = 1000}; local cachedEffects = {}
 FogBtn.MouseButton1Click:Connect(function() noFogEnabled = not noFogEnabled; FogBtn.Text = "No Fog: "..(noFogEnabled and "ON" or "OFF"); FogBtn.TextColor3 = noFogEnabled and Color3.new(0,1,0) or Color3.fromRGB(200,200,200); Notify("Visual", "No Fog "..(noFogEnabled and "Enabled" or "Disabled"), 2); if noFogEnabled then lightingStatsFog.FogEnd = Lighting.FogEnd; Lighting.FogEnd = 9e9; for _,v in pairs(Lighting:GetChildren()) do if v:IsA("Atmosphere") or v:IsA("Sky") or v:IsA("PostEffect") then v.Parent = nil; table.insert(cachedEffects, v) end end else Lighting.FogEnd = lightingStatsFog.FogEnd; for _,v in pairs(cachedEffects) do v.Parent = Lighting end; cachedEffects = {} end end)
 
-local BriFrame = createRow(60, 6, SetPageScroll)
+local BriFrame = createRow(60, 5, SetPageScroll)
 local BriLbl = Instance.new("TextLabel", BriFrame); BriLbl.Text = "Brightness"; BriLbl.Size=UDim2.new(0.4,0,0,25); BriLbl.Position=UDim2.new(0.05,0,0,5); BriLbl.BackgroundTransparency=1; BriLbl.TextColor3=Color3.new(1,1,1); BriLbl.TextXAlignment=Enum.TextXAlignment.Left; BriLbl.Font=Enum.Font.GothamBold
 local MaxBtn = Instance.new("TextButton", BriFrame); MaxBtn.Size = UDim2.new(0.3, 0, 0, 20); MaxBtn.Position = UDim2.new(0.65, 0, 0, 5); MaxBtn.Text = "Max: OFF"; MaxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40); MaxBtn.TextColor3 = Color3.new(1,1,1); Instance.new("UICorner", MaxBtn).CornerRadius = UDim.new(0, 4)
 local BriSlider = Instance.new("Frame", BriFrame); BriSlider.Size = UDim2.new(0.9, 0, 0, 4); BriSlider.Position = UDim2.new(0.05, 0, 0, 40); BriSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
@@ -449,7 +493,7 @@ local function UpdateBri(val) local b = math.clamp(val, 0, 10); Lighting.Brightn
 local briDrag2 = false; BriDot.MouseButton1Down:Connect(function() briDrag2 = true end)
 MaxBtn.MouseButton1Click:Connect(function() isMaxBri = not isMaxBri; MaxBtn.Text = "Max: "..(isMaxBri and "ON" or "OFF"); MaxBtn.BackgroundColor3 = isMaxBri and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(40, 40, 40); Notify("Visual", "True Fullbright "..(isMaxBri and "ON" or "OFF"), 2); if isMaxBri then origLighting.Brightness = Lighting.Brightness; origLighting.Ambient = Lighting.Ambient; origLighting.OutdoorAmbient = Lighting.OutdoorAmbient; origLighting.GlobalShadows = Lighting.GlobalShadows; origLighting.ClockTime = Lighting.ClockTime else Lighting.Brightness = origLighting.Brightness; Lighting.Ambient = origLighting.Ambient; Lighting.OutdoorAmbient = origLighting.OutdoorAmbient; Lighting.GlobalShadows = origLighting.GlobalShadows; Lighting.ClockTime = origLighting.ClockTime end end)
 
-local KeyFrame = createRow(40, 7, SetPageScroll)
+local KeyFrame = createRow(40, 6, SetPageScroll)
 local KeyLbl = Instance.new("TextLabel", KeyFrame); KeyLbl.Text="Menu Toggle Key:"; KeyLbl.Size=UDim2.new(0.5,0,1,0); KeyLbl.Position=UDim2.new(0,10,0,0); KeyLbl.BackgroundTransparency=1; KeyLbl.TextColor3=Color3.new(1,1,1); KeyLbl.TextXAlignment=Enum.TextXAlignment.Left; KeyLbl.Font=Enum.Font.Gotham
 local KeyBtn = Instance.new("TextButton", KeyFrame); KeyBtn.Size=UDim2.new(0.4,0,0,30); KeyBtn.Position=UDim2.new(0.55,0,0,5); KeyBtn.BackgroundColor3=Color3.fromRGB(30,30,30); KeyBtn.Text="RightControl"; KeyBtn.TextColor3=Color3.new(0,1,1); KeyBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", KeyBtn).CornerRadius=UDim.new(0,6)
 local listening = false; KeyBtn.MouseButton1Click:Connect(function() listening=true; KeyBtn.Text="Press any key..."; KeyBtn.TextColor3=Color3.new(1,1,0) end)
@@ -461,14 +505,14 @@ UserInputService.InputBegan:Connect(function(input)
 	end 
 end)
 
-local JobFrame = createRow(70, 8, SetPageScroll)
+local JobFrame = createRow(70, 7, SetPageScroll)
 local JobBox = Instance.new("TextBox", JobFrame); JobBox.Size=UDim2.new(1,0,0,30); JobBox.BackgroundColor3=Color3.fromRGB(20,20,20); JobBox.TextColor3=Color3.new(0,1,1); JobBox.PlaceholderText="Paste Job ID to Join..."; JobBox.Text=""; Instance.new("UICorner", JobBox).CornerRadius=UDim.new(0,6); Instance.new("UIStroke", JobBox).Color=Color3.fromRGB(0,80,200)
 local JoinBtn = Instance.new("TextButton", JobFrame); JoinBtn.Size=UDim2.new(1,0,0,30); JoinBtn.Position=UDim2.new(0,0,0,35); JoinBtn.BackgroundColor3=Color3.fromRGB(0,150,0); JoinBtn.Text="Join This Job ID"; JoinBtn.TextColor3=Color3.new(1,1,1); JoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", JoinBtn).CornerRadius=UDim.new(0,6)
 JoinBtn.MouseButton1Click:Connect(function() if JobBox.Text ~= "" then JoinBtn.Text="Joining..."; Notify("System", "Joining Server...", 3); TeleportService:TeleportToPlaceInstance(game.PlaceId, JobBox.Text, LocalPlayer) else JoinBtn.Text="Please enter ID!"; wait(1); JoinBtn.Text="Join This Job ID" end end)
 
-local RejoinBtn = Instance.new("TextButton", SetPageScroll); RejoinBtn.LayoutOrder = 9; RejoinBtn.Size=UDim2.new(1,0,0,30); RejoinBtn.BackgroundColor3=Color3.fromRGB(200,50,50); RejoinBtn.Text="Rejoin Current Server"; RejoinBtn.TextColor3=Color3.new(1,1,1); RejoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", RejoinBtn).CornerRadius=UDim.new(0,6)
+local RejoinBtn = Instance.new("TextButton", SetPageScroll); RejoinBtn.LayoutOrder = 8; RejoinBtn.Size=UDim2.new(1,0,0,30); RejoinBtn.BackgroundColor3=Color3.fromRGB(200,50,50); RejoinBtn.Text="Rejoin Current Server"; RejoinBtn.TextColor3=Color3.new(1,1,1); RejoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", RejoinBtn).CornerRadius=UDim.new(0,6)
 RejoinBtn.MouseButton1Click:Connect(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end)
-local CopyBtn = Instance.new("TextButton", SetPageScroll); CopyBtn.LayoutOrder = 10; CopyBtn.Size=UDim2.new(1,0,0,30); CopyBtn.BackgroundColor3=Color3.fromRGB(0,80,200); CopyBtn.Text="Copy Server ID"; CopyBtn.TextColor3=Color3.new(1,1,1); CopyBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", CopyBtn).CornerRadius=UDim.new(0,6)
+local CopyBtn = Instance.new("TextButton", SetPageScroll); CopyBtn.LayoutOrder = 9; CopyBtn.Size=UDim2.new(1,0,0,30); CopyBtn.BackgroundColor3=Color3.fromRGB(0,80,200); CopyBtn.Text="Copy Server ID"; CopyBtn.TextColor3=Color3.new(1,1,1); CopyBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", CopyBtn).CornerRadius=UDim.new(0,6)
 CopyBtn.MouseButton1Click:Connect(function() setclipboard(game.JobId); CopyBtn.Text="Copied!"; Notify("System", "Job ID Copied to Clipboard!", 2); task.wait(1); CopyBtn.Text="Copy Server ID" end)
 
 -- *** SYNC TOGGLES FROM CONFIG ***
@@ -499,9 +543,9 @@ end
 RunService.RenderStepped:Connect(function(deltaTime)
 	if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then flyDrag = false; spdDrag = false; briDrag2 = false; jmpDrag = false; espDrag = false end
 	local mousePos = UserInputService:GetMouseLocation().X
-	if flyDrag then local pos = math.clamp((mousePos - FlySlider.AbsolutePosition.X) / FlySlider.AbsoluteSize.X, 0, 1); _G.UpdateFly(pos * 500) end
-	if spdDrag then local pos = math.clamp((mousePos - SpdSlider.AbsolutePosition.X) / SpdSlider.AbsoluteSize.X, 0, 1); _G.UpdateSpd(pos * 500) end
-	if jmpDrag then local pos = math.clamp((mousePos - JmpSlider.AbsolutePosition.X) / JmpSlider.AbsoluteSize.X, 0, 1); _G.UpdateJmp(pos * 500) end
+	if flyDrag then local pos = math.clamp((mousePos - FlySlider.AbsolutePosition.X) / FlySlider.AbsoluteSize.X, 0, 1); _G.UpdateFly(pos * 5000) end
+	if spdDrag then local pos = math.clamp((mousePos - SpdSlider.AbsolutePosition.X) / SpdSlider.AbsoluteSize.X, 0, 1); _G.UpdateSpd(pos * 5000) end
+	if jmpDrag then local pos = math.clamp((mousePos - JmpSlider.AbsolutePosition.X) / JmpSlider.AbsoluteSize.X, 0, 1); _G.UpdateJmp(pos * 5000) end
 	if briDrag2 then local pos = math.clamp((mousePos - BriSlider.AbsolutePosition.X) / BriSlider.AbsoluteSize.X, 0, 1); UpdateBri(pos * 10); if isMaxBri then isMaxBri = false; MaxBtn.Text = "Max: OFF"; MaxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end end
 	if espDrag then local pos = math.clamp((mousePos - EspSlider.AbsolutePosition.X) / EspSlider.AbsoluteSize.X, 0, 1); _G.UpdateEspSize(8 + pos * (32 - 8)) end
 
@@ -568,3 +612,4 @@ end)
 
 -- Initial Toast Notification
 Notify("System", "Foxy Hub Ready!! Successfully Loaded!", 5)
+Notify("System", "Instant Proximity Prompts Enabled!", 5)
