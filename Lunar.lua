@@ -51,7 +51,7 @@ clearOldHubs()
 
 -- UI Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "FoxyHub_Ultimate_v13"
+ScreenGui.Name = "FoxyHub_Ultimate_v14"
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 ScreenGui.ResetOnSpawn = false
 pcall(function() ScreenGui.Parent = CoreGui end)
@@ -274,8 +274,8 @@ RunService.Stepped:Connect(function() if isNoclipping and LocalPlayer.Character 
 local r4 = createRow(55, 5, GenPageScroll)
 local FlyBtn = Instance.new("TextButton", r4); FlyBtn.Size = UDim2.new(0.6,0,0,25); FlyBtn.Position=UDim2.new(0,10,0,5); FlyBtn.BackgroundTransparency=1; FlyBtn.Text="Fly: OFF"; FlyBtn.TextXAlignment=Enum.TextXAlignment.Left; FlyBtn.TextColor3=Color3.fromRGB(200,200,200); FlyBtn.Font=Enum.Font.Gotham
 local FlyBox = Instance.new("TextBox", r4); FlyBox.Size=UDim2.new(0.2,0,0,20); FlyBox.Position=UDim2.new(0.75,0,0,5); FlyBox.Text="50"; FlyBox.BackgroundColor3=Color3.fromRGB(30,30,30); FlyBox.TextColor3=Color3.new(1,1,1); Instance.new("UICorner", FlyBox).CornerRadius=UDim.new(0,4)
-local FlySlider = Instance.new("Frame", r4); FlySlider.Size = UDim2.new(0.9, 0, 0, 4); FlySlider.Position = UDim2.new(0.05, 0, 0, 40); FlySlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local FlyFill = Instance.new("Frame", FlySlider); FlyFill.Size = UDim2.new(50/5000, 0, 1, 0); FlyFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local FlyDot = Instance.new("TextButton", FlySlider); FlyDot.Size = UDim2.new(0, 12, 0, 12); FlyDot.Position = UDim2.new(50/5000, -6, 0.5, -6); FlyDot.Text = ""; FlyDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", FlyDot).CornerRadius = UDim.new(1, 0)
-_G.UpdateFly = function(val) flySpeed = math.clamp(val, 0, 5000); FlyBox.Text = tostring(math.floor(flySpeed)); FlyFill.Size = UDim2.new(flySpeed/5000, 0, 1, 0); FlyDot.Position = UDim2.new(flySpeed/5000, -6, 0.5, -6) end
+local FlySlider = Instance.new("Frame", r4); FlySlider.Size = UDim2.new(0.9, 0, 0, 4); FlySlider.Position = UDim2.new(0.05, 0, 0, 40); FlySlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local FlyFill = Instance.new("Frame", FlySlider); FlyFill.Size = UDim2.new(50/500, 0, 1, 0); FlyFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local FlyDot = Instance.new("TextButton", FlySlider); FlyDot.Size = UDim2.new(0, 12, 0, 12); FlyDot.Position = UDim2.new(50/500, -6, 0.5, -6); FlyDot.Text = ""; FlyDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", FlyDot).CornerRadius = UDim.new(1, 0)
+_G.UpdateFly = function(val) flySpeed = math.clamp(val, 0, 500); FlyBox.Text = tostring(math.floor(flySpeed)); FlyFill.Size = UDim2.new(flySpeed/500, 0, 1, 0); FlyDot.Position = UDim2.new(flySpeed/500, -6, 0.5, -6) end
 local flyDrag = false; FlyDot.MouseButton1Down:Connect(function() flyDrag = true end); FlyBox.FocusLost:Connect(function() _G.UpdateFly(tonumber(FlyBox.Text) or 50) end)
 FlyBtn.MouseButton1Click:Connect(function()
 	isFlying = not isFlying; FlyBtn.Text = "Fly: "..(isFlying and "ON" or "OFF"); FlyBtn.TextColor3 = isFlying and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8); Notify("Movement", "Fly "..(isFlying and "Enabled" or "Disabled"), 2)
@@ -303,8 +303,8 @@ end)
 local r5 = createRow(55, 6, GenPageScroll)
 local SpdBtn = Instance.new("TextButton", r5); SpdBtn.Size = UDim2.new(0.6, 0, 0, 25); SpdBtn.Position = UDim2.new(0, 10, 0, 5); SpdBtn.BackgroundTransparency = 1; SpdBtn.Text = "WalkSpeed: OFF"; SpdBtn.TextColor3 = Color3.fromRGB(200, 200, 200); SpdBtn.TextXAlignment = Enum.TextXAlignment.Left; SpdBtn.Font = Enum.Font.Gotham
 local SpdBox = Instance.new("TextBox", r5); SpdBox.Size = UDim2.new(0.2, 0, 0, 20); SpdBox.Position = UDim2.new(0.75, 0, 0, 5); SpdBox.Text = "16"; SpdBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30); SpdBox.TextColor3 = Color3.fromRGB(255, 255, 255); Instance.new("UICorner", SpdBox).CornerRadius = UDim.new(0, 4)
-local SpdSlider = Instance.new("Frame", r5); SpdSlider.Size = UDim2.new(0.9, 0, 0, 4); SpdSlider.Position = UDim2.new(0.05, 0, 0, 40); SpdSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local SpdFill = Instance.new("Frame", SpdSlider); SpdFill.Size = UDim2.new(16/5000, 0, 1, 0); SpdFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local SpdDot = Instance.new("TextButton", SpdSlider); SpdDot.Size = UDim2.new(0, 12, 0, 12); SpdDot.Position = UDim2.new(16/5000, -6, 0.5, -6); SpdDot.Text = ""; SpdDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", SpdDot).CornerRadius = UDim.new(1, 0)
-_G.UpdateSpd = function(val) targetSpeed = math.clamp(val, 0, 5000); SpdBox.Text = tostring(math.floor(targetSpeed)); SpdFill.Size = UDim2.new(targetSpeed/5000, 0, 1, 0); SpdDot.Position = UDim2.new(targetSpeed/5000, -6, 0.5, -6) end
+local SpdSlider = Instance.new("Frame", r5); SpdSlider.Size = UDim2.new(0.9, 0, 0, 4); SpdSlider.Position = UDim2.new(0.05, 0, 0, 40); SpdSlider.BackgroundColor3 = Color3.fromRGB(50, 50, 50); local SpdFill = Instance.new("Frame", SpdSlider); SpdFill.Size = UDim2.new(16/500, 0, 1, 0); SpdFill.BackgroundColor3 = Color3.fromRGB(0, 150, 255); local SpdDot = Instance.new("TextButton", SpdSlider); SpdDot.Size = UDim2.new(0, 12, 0, 12); SpdDot.Position = UDim2.new(16/500, -6, 0.5, -6); SpdDot.Text = ""; SpdDot.BackgroundColor3 = Color3.new(1,1,1); Instance.new("UICorner", SpdDot).CornerRadius = UDim.new(1, 0)
+_G.UpdateSpd = function(val) targetSpeed = math.clamp(val, 0, 500); SpdBox.Text = tostring(math.floor(targetSpeed)); SpdFill.Size = UDim2.new(targetSpeed/500, 0, 1, 0); SpdDot.Position = UDim2.new(targetSpeed/500, -6, 0.5, -6) end
 local spdDrag = false; SpdDot.MouseButton1Down:Connect(function() spdDrag = true end); SpdBox.FocusLost:Connect(function() _G.UpdateSpd(tonumber(SpdBox.Text) or 16) end)
 SpdBtn.MouseButton1Click:Connect(function() isSpeedEnabled = not isSpeedEnabled; SpdBtn.Text = "WalkSpeed: " .. (isSpeedEnabled and "ON" or "OFF"); SpdBtn.TextColor3 = isSpeedEnabled and Color3.new(0, 1, 0) or Color3.new(0.8, 0.8, 0.8); if not isSpeedEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then LocalPlayer.Character.Humanoid.WalkSpeed = 16 end; Notify("Movement", "CF WalkSpeed "..(isSpeedEnabled and "Enabled" or "Disabled"), 2) end)
 
@@ -388,40 +388,63 @@ end
 _G.UpdateWpUI = RefreshWp
 AddWp.MouseButton1Click:Connect(function() local name = WpBox.Text; if name ~= "" and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then waypoints[name] = LocalPlayer.Character.HumanoidRootPart.CFrame; WpBox.Text = ""; RefreshWp(); Notify("Teleport", "Saved Waypoint: "..name, 2) end end)
 
---- 🎯 AIMLOCK ---
+--- 🎯 AIMLOCK (AUTO-NEAREST) ---
 createHeader("--- 🎯 Aimlock ---", 40, GenPageScroll)
 
-local r12 = createRow(160, 41, GenPageScroll)
-local AimTitle = Instance.new("TextLabel", r12); AimTitle.Text = "Aimlock System (Toggle)"; AimTitle.Size=UDim2.new(1,0,0,20); AimTitle.Position=UDim2.new(0,0,0,5); AimTitle.BackgroundTransparency=1; AimTitle.TextColor3=Color3.new(1,1,1); AimTitle.Font=Enum.Font.GothamBold
+local function getNearestPlayer()
+	local nearestDist = math.huge
+	local nearestTarget = nil
+	if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return nil end
+	local myPos = LocalPlayer.Character.HumanoidRootPart.Position
 
-local AimSearch = Instance.new("TextBox", r12); AimSearch.Size=UDim2.new(0.5,0,0,25); AimSearch.Position=UDim2.new(0.05,0,0,30); AimSearch.PlaceholderText="Player Name..."; AimSearch.BackgroundColor3=Color3.fromRGB(30,30,30); AimSearch.TextColor3=Color3.new(1,1,1); AimSearch.Text=""; Instance.new("UICorner", AimSearch).CornerRadius = UDim.new(0,6)
-local AimKeyBtn = Instance.new("TextButton", r12); AimKeyBtn.Size=UDim2.new(0.3,0,0,25); AimKeyBtn.Position=UDim2.new(0.58,0,0,30); AimKeyBtn.Text="Key: G"; AimKeyBtn.BackgroundColor3=Color3.fromRGB(40,40,40); AimKeyBtn.TextColor3=Color3.new(0,1,1); Instance.new("UICorner", AimKeyBtn).CornerRadius = UDim.new(0,6)
-local AimRef = Instance.new("ImageButton", r12); AimRef.Size=UDim2.new(0,25,0,25); AimRef.Position=UDim2.new(0.9,0,0,30); AimRef.Image="rbxassetid://6031097225"; AimRef.BackgroundColor3=Color3.fromRGB(0,80,200); Instance.new("UICorner", AimRef).CornerRadius=UDim.new(0,6)
-local AimScroll = Instance.new("ScrollingFrame", r12); AimScroll.Size=UDim2.new(0.9, 0, 0, 90); AimScroll.Position = UDim2.new(0.05, 0, 0, 60); AimScroll.BackgroundColor3 = Color3.fromRGB(20, 20, 20); AimScroll.CanvasSize = UDim2.new(0,0,0,0); AimScroll.ScrollBarThickness = 2
-local AimList = Instance.new("UIListLayout", AimScroll); AimList.Padding=UDim.new(0,2)
-
-local function RefreshAimList(filter)
-	for _,v in pairs(AimScroll:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-	for _,p in pairs(Players:GetPlayers()) do
-		if p~=LocalPlayer then
-			local show = true; if filter and filter ~= "" then if not (string.find(string.lower(p.Name), string.lower(filter)) or string.find(string.lower(p.DisplayName), string.lower(filter))) then show = false end end
-			if show then
-				local b = Instance.new("TextButton", AimScroll); b.Size=UDim2.new(1,0,0,25); b.Text = p.DisplayName .. " (@" .. p.Name .. ")"; b.BackgroundColor3=Color3.fromRGB(40,40,40); b.TextColor3=Color3.new(1,1,1); b.Font=Enum.Font.Gotham; b.TextSize=12
-				b.MouseButton1Click:Connect(function() aimlockTarget = p; AimSearch.Text = p.Name; isAiming = false; if not isShiftLocked then UserInputService.MouseBehavior = Enum.MouseBehavior.Default end; Notify("Aimlock", "Target Set: "..p.Name, 2) end)
+	for _, p in pairs(Players:GetPlayers()) do
+		if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") and p.Character:FindFirstChild("Humanoid") and p.Character.Humanoid.Health > 0 then
+			local dist = (p.Character.HumanoidRootPart.Position - myPos).Magnitude
+			if dist < nearestDist then
+				nearestDist = dist
+				nearestTarget = p
 			end
 		end
 	end
-	AimScroll.CanvasSize = UDim2.new(0,0,0,AimList.AbsoluteContentSize.Y)
+	return nearestTarget
 end
-RefreshAimList(""); AimSearch.Changed:Connect(function(p) if p == "Text" then RefreshAimList(AimSearch.Text) end end); AimRef.MouseButton1Click:Connect(function() RefreshAimList(AimSearch.Text) end)
+
+local r12 = createRow(40, 41, GenPageScroll)
+local AimBtn = Instance.new("TextButton", r12); AimBtn.Size=UDim2.new(0.6,0,1,0); AimBtn.Position=UDim2.new(0,10,0,0); AimBtn.BackgroundTransparency=1; AimBtn.Text="Nearest Aimlock: OFF"; AimBtn.TextColor3=Color3.fromRGB(200,200,200); AimBtn.Font=Enum.Font.Gotham; AimBtn.TextXAlignment = Enum.TextXAlignment.Left
+local AimKeyBtn = Instance.new("TextButton", r12); AimKeyBtn.Size=UDim2.new(0.3,0,0,25); AimKeyBtn.Position=UDim2.new(0.65,0,0,7.5); AimKeyBtn.Text="Key: G"; AimKeyBtn.BackgroundColor3=Color3.fromRGB(40,40,40); AimKeyBtn.TextColor3=Color3.new(0,1,1); Instance.new("UICorner", AimKeyBtn).CornerRadius = UDim.new(0,6)
+
+local function toggleAimlock()
+	isAiming = not isAiming
+	if isAiming then
+		aimlockTarget = getNearestPlayer()
+		if not aimlockTarget then
+			isAiming = false
+			Notify("Aimlock", "No target found nearby!", 2)
+		else
+			Notify("Aimlock", "LOCKED: " .. aimlockTarget.Name, 1.5)
+		end
+	else
+		aimlockTarget = nil
+		if not isShiftLocked then UserInputService.MouseBehavior = Enum.MouseBehavior.Default end
+		Notify("Aimlock", "UNLOCKED", 1.5)
+	end
+	AimBtn.Text = "Nearest Aimlock: "..(isAiming and "ON" or "OFF")
+	AimBtn.TextColor3 = isAiming and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
+end
+
+AimBtn.MouseButton1Click:Connect(toggleAimlock)
 
 local aimListening = false
 AimKeyBtn.MouseButton1Click:Connect(function() aimListening = true; AimKeyBtn.Text = "..." end)
 UserInputService.InputBegan:Connect(function(input, gp)
-	if aimListening and input.UserInputType == Enum.UserInputType.Keyboard then aimlockKey = input.KeyCode; local keyStr = tostring(aimlockKey):gsub("Enum.KeyCode.",""); if keyStr == "LeftControl" then keyStr = "LCtrl" end; AimKeyBtn.Text = "Key: "..keyStr; aimListening = false
+	if aimListening and input.UserInputType == Enum.UserInputType.Keyboard then 
+		aimlockKey = input.KeyCode
+		local keyStr = tostring(aimlockKey):gsub("Enum.KeyCode.","")
+		if keyStr == "LeftControl" then keyStr = "LCtrl" end
+		AimKeyBtn.Text = "Key: "..keyStr
+		aimListening = false
 	elseif not gp and input.KeyCode == aimlockKey then
-		isAiming = not isAiming; if not isAiming and not isShiftLocked then UserInputService.MouseBehavior = Enum.MouseBehavior.Default end
-		Notify("Aimlock", isAiming and "LOCKED" or "UNLOCKED", 1.5)
+		toggleAimlock()
 	end
 end)
 
@@ -510,6 +533,7 @@ local JobBox = Instance.new("TextBox", JobFrame); JobBox.Size=UDim2.new(1,0,0,30
 local JoinBtn = Instance.new("TextButton", JobFrame); JoinBtn.Size=UDim2.new(1,0,0,30); JoinBtn.Position=UDim2.new(0,0,0,35); JoinBtn.BackgroundColor3=Color3.fromRGB(0,150,0); JoinBtn.Text="Join This Job ID"; JoinBtn.TextColor3=Color3.new(1,1,1); JoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", JoinBtn).CornerRadius=UDim.new(0,6)
 JoinBtn.MouseButton1Click:Connect(function() if JobBox.Text ~= "" then JoinBtn.Text="Joining..."; Notify("System", "Joining Server...", 3); TeleportService:TeleportToPlaceInstance(game.PlaceId, JobBox.Text, LocalPlayer) else JoinBtn.Text="Please enter ID!"; wait(1); JoinBtn.Text="Join This Job ID" end end)
 
+-- *** REJOIN & COPY BUTTONS ***
 local RejoinBtn = Instance.new("TextButton", SetPageScroll); RejoinBtn.LayoutOrder = 8; RejoinBtn.Size=UDim2.new(1,0,0,30); RejoinBtn.BackgroundColor3=Color3.fromRGB(200,50,50); RejoinBtn.Text="Rejoin Current Server"; RejoinBtn.TextColor3=Color3.new(1,1,1); RejoinBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", RejoinBtn).CornerRadius=UDim.new(0,6)
 RejoinBtn.MouseButton1Click:Connect(function() TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LocalPlayer) end)
 local CopyBtn = Instance.new("TextButton", SetPageScroll); CopyBtn.LayoutOrder = 9; CopyBtn.Size=UDim2.new(1,0,0,30); CopyBtn.BackgroundColor3=Color3.fromRGB(0,80,200); CopyBtn.Text="Copy Server ID"; CopyBtn.TextColor3=Color3.new(1,1,1); CopyBtn.Font=Enum.Font.GothamBold; Instance.new("UICorner", CopyBtn).CornerRadius=UDim.new(0,6)
@@ -524,6 +548,9 @@ _G.SyncTogglesFromConfig = function()
 	
 	CtrlTpBtn.Text = "Click TP: "..(ctrlTpEnabled and "ON" or "OFF")
 	CtrlTpBtn.TextColor3 = ctrlTpEnabled and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
+
+	AimBtn.Text = "Nearest Aimlock: "..(isAiming and "ON" or "OFF")
+	AimBtn.TextColor3 = isAiming and Color3.new(0,1,0) or Color3.new(0.8,0.8,0.8)
 
 	local function formatKey(k)
 		local s = tostring(k):gsub("Enum.KeyCode.", "")
@@ -543,8 +570,8 @@ end
 RunService.RenderStepped:Connect(function(deltaTime)
 	if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then flyDrag = false; spdDrag = false; briDrag2 = false; jmpDrag = false; espDrag = false end
 	local mousePos = UserInputService:GetMouseLocation().X
-	if flyDrag then local pos = math.clamp((mousePos - FlySlider.AbsolutePosition.X) / FlySlider.AbsoluteSize.X, 0, 1); _G.UpdateFly(pos * 5000) end
-	if spdDrag then local pos = math.clamp((mousePos - SpdSlider.AbsolutePosition.X) / SpdSlider.AbsoluteSize.X, 0, 1); _G.UpdateSpd(pos * 5000) end
+	if flyDrag then local pos = math.clamp((mousePos - FlySlider.AbsolutePosition.X) / FlySlider.AbsoluteSize.X, 0, 1); _G.UpdateFly(pos * 500) end
+	if spdDrag then local pos = math.clamp((mousePos - SpdSlider.AbsolutePosition.X) / SpdSlider.AbsoluteSize.X, 0, 1); _G.UpdateSpd(pos * 500) end
 	if jmpDrag then local pos = math.clamp((mousePos - JmpSlider.AbsolutePosition.X) / JmpSlider.AbsoluteSize.X, 0, 1); _G.UpdateJmp(pos * 5000) end
 	if briDrag2 then local pos = math.clamp((mousePos - BriSlider.AbsolutePosition.X) / BriSlider.AbsoluteSize.X, 0, 1); UpdateBri(pos * 10); if isMaxBri then isMaxBri = false; MaxBtn.Text = "Max: OFF"; MaxBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40) end end
 	if espDrag then local pos = math.clamp((mousePos - EspSlider.AbsolutePosition.X) / EspSlider.AbsoluteSize.X, 0, 1); _G.UpdateEspSize(8 + pos * (32 - 8)) end
@@ -612,4 +639,4 @@ end)
 
 -- Initial Toast Notification
 Notify("System", "Foxy Hub Ready!! Successfully Loaded!", 5)
-Notify("System", "Instant Proximity Prompts Enabled!", 5)
+Notify("System", "Fly & Speed UI Limits updated to 500!", 5)
